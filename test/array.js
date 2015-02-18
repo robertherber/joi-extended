@@ -158,6 +158,17 @@ describe('array', function () {
                 done();
             });
         });
+
+        it('can resolve refs to context', function (done) {
+
+            var schema = Joi.array().contains(Joi.string().valid(Joi.ref('$key')));
+            Joi.validate(['one', 'two', 'three'], schema, { context: { key: 'two' } }, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal(['one', 'two', 'three']);
+                done();
+            });
+        });
     });
 
     describe('#includes', function () {
