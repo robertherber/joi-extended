@@ -73,6 +73,93 @@ describe('array', function () {
         });
     });
 
+    describe('#contains', function () {
+
+        it('passes when a member matches', function (done) {
+
+            var schema = Joi.array().contains(Joi.number());
+            var input = [1, 'a', 'b'];
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal([1, 'a', 'b']);
+                done();
+            });
+        });
+
+        it('converts all matching members', function (done) {
+
+            var schema = Joi.array().contains(Joi.number());
+            var input = ['1', 'a', 'b', '2'];
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal([1, 'a', 'b', 2]);
+                done();
+            });
+        });
+
+        it('fails when no member matches', function (done) {
+
+            var schema = Joi.array().contains(Joi.number(), Joi.boolean());
+            var input = ['a', 'b', 'c'];
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain a required type');
+                done();
+            });
+        });
+
+        it('fails when only one member matches', function (done) {
+
+            var schema = Joi.array().contains(Joi.number(), Joi.number());
+            var input = ['a', 'b', 1];
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain a required type');
+                done();
+            });
+        });
+
+        it('fails when only one member matches and types are added as separate calls', function (done) {
+
+            var schema = Joi.array().contains(Joi.number()).contains(Joi.number());
+            var input = ['a', 'b', 1];
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain a required type');
+                done();
+            });
+        });
+
+        it('passes when multiple members are matched', function (done) {
+
+            var schema = Joi.array().contains(Joi.number(), Joi.number());
+            var input = ['a', 2, '1'];
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal(['a', 2, 1]);
+                done();
+            });
+        });
+
+        it('passes when multiple members are added as separate calls', function (done) {
+
+            var schema = Joi.array().contains(Joi.number()).contains(Joi.number());
+            var input = ['a', 2, '1'];
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal(['a', 2, 1]);
+                done();
+            });
+        });
+    });
+
     describe('#includes', function () {
 
         it('converts members', function (done) {
