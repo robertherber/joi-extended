@@ -40,6 +40,7 @@ Lead Maintainer: [Nicolas Morel](https://github.com/marsup)
     - [`array`](#array)
         - [`array.sparse(enabled)`](#arraysparseenabled)
         - [`array.includes(type)`](#arrayincludestype)
+        - [`array.items(type)`](#arrayitemstype)
         - [`array.excludes(type)`](#arrayexcludestype)
         - [`array.min(limit)`](#arrayminlimit)
         - [`array.max(limit)`](#arraymaxlimit)
@@ -538,9 +539,19 @@ schema.validate(4); // returns `{ error: null, value: [ 4 ] }`
 List the types allowed for the array values where:
 - `type` - a **joi** schema object to validate each array item against. `type` can be an array of values, or multiple values can be passed as individual arguments.
 
+If a given type is `.required()` then there must be a matching item in the array. If a type is `.forbidden()` then it cannot appear in the array. Required items
+can be added multiple times to signify that multiple items must be found.
+
 ```javascript
-var schema = Joi.array().includes(Joi.string(), Joi.number());
+var schema = Joi.array().includes(Joi.string(), Joi.number()); // array may contain strings and numbers
+var schema = Joi.array().includes(Joi.string().required(), Joi.string().required()); // array must contain at least two strings
+var schema = Joi.array().includes(Joi.string().valid('not allowed').forbidden(), Joi.string()); // array may contain strings, but none of those strings can match 'not allowed'
+
 ```
+
+#### `array.items(type)`
+
+An alias for `array.includes(type)`.
 
 #### `array.excludes(type)`
 

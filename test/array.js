@@ -132,6 +132,123 @@ describe('array', function () {
                 [['joi', 'everydaylowprices', 5000], true]
             ], done);
         });
+
+        it('allows forbidden to restrict values', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().valid('four').forbidden(), Joi.string());
+            var input = ['one', 'two', 'three', 'four'];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" at position 3 contains an excluded value');
+                done();
+            });
+        });
+
+        it('validates that a required value exists', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().valid('four').required(), Joi.string());
+            var input = ['one', 'two', 'three'];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain 1 required value(s)');
+                done();
+            });
+        });
+
+        it('validates that a required value exists with abortEarly = false', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().valid('four').required(), Joi.string()).options({ abortEarly: false });
+            var input = ['one', 'two', 'three'];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain 1 required value(s)');
+                done();
+            });
+        });
+
+        it('does not re-run required tests that have already been matched', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().valid('four').required(), Joi.string());
+            var input = ['one', 'two', 'three', 'four', 'four', 'four'];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal(input);
+                done();
+            });
+        });
+
+        it('can require duplicates of the same schema and fail', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().valid('four').required(), Joi.string().valid('four').required(), Joi.string());
+            var input = ['one', 'two', 'three', 'four'];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain 1 required value(s)');
+                done();
+            });
+        });
+
+        it('can require duplicates of the same schema and pass', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().valid('four').required(), Joi.string().valid('four').required(), Joi.string());
+            var input = ['one', 'two', 'three', 'four', 'four'];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal(input);
+                done();
+            });
+        });
+
+        it('continues to validate after a required match', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().required(), Joi.boolean());
+            var input = [true, 'one', false, 'two'];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.not.exist();
+                expect(value).to.deep.equal(input);
+                done();
+            });
+        });
+
+        it('can use a label on a required parameter', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().required().label('required string'), Joi.boolean());
+            var input = [true, false];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain [required string]');
+                done();
+            });
+        });
+
+        it('can use a label on one required parameter, and no label on another', function (done) {
+
+            var schema = Joi.array().includes(Joi.string().required().label('required string'), Joi.string().required(), Joi.boolean());
+            var input = [true, false];
+
+            schema.validate(input, function (err, value) {
+
+                expect(err).to.exist();
+                expect(err.message).to.equal('"value" does not contain [required string] and 1 other required value(s)');
+                done();
+            });
+        });
     });
 
     describe('#min', function () {
