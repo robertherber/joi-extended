@@ -542,6 +542,12 @@ schema.validate(4); // returns `{ error: null, value: [ 4 ] }`
 
 #### `array.includes(type)`
 
+This method is deprecated.
+
+An alias for `array.items(type)`
+
+#### `array.items(type)`
+
 List the types allowed for the array values where:
 - `type` - a **joi** schema object to validate each array item against. `type` can be an array of values, or multiple values can be passed as individual arguments.
 
@@ -555,11 +561,9 @@ var schema = Joi.array().includes(Joi.string().valid('not allowed').forbidden(),
 
 ```
 
-#### `array.items(type)`
-
-An alias for `array.includes(type)`.
-
 #### `array.excludes(type)`
+
+This method is deprecated.
 
 List the types forbidden for the array values where:
 - `type` - a **joi** schema object to validate each array item against. `type` can be an array of values, or multiple values can be passed as individual arguments.
