@@ -17,7 +17,7 @@
     "hoek": "3.x.x",
     "isemail": "2.x.x",
     "moment": "2.x.x",
-    "mongorito": "^2.0.0",
+    "mongorito": "*",
     "topo": "2.x.x"
   },
   "devDependencies": {
