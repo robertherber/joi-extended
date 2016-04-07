@@ -1,33 +1,32 @@
+'use strict';
 // Load modules
 
-var Lab = require('lab');
-var Code = require('code');
-var Joi = require('../lib');
-var Helper = require('./helper');
-var ObjectID = require('bson').BSONPure.ObjectID;
+const Lab = require('lab');
+const Code = require('code');
+const Joi = require('../lib');
+const Helper = require('./helper');
+const ObjectID = require('bson').BSONPure.ObjectID;
 
 
 // Declare internals
 
-var internals = {};
+const internals = {};
 
 
 // Test shortcuts
 
-var lab = exports.lab = Lab.script();
-var before = lab.before;
-var after = lab.after;
-var describe = lab.describe;
-var it = lab.it;
-var expect = Code.expect;
+const lab = exports.lab = Lab.script();
+const describe = lab.describe;
+const it = lab.it;
+const expect = Code.expect;
 
 
-describe('objectId', function () {
+describe('objectId', () => {
 
-    it('converts a hex string to an objectId', function (done) {
+    it('converts a hex string to an objectId', (done) => {
 
-        var hexString = '507f1f77bcf86cd799439011';
-        Joi.objectId().validate(hexString, function (err, value) {
+        const hexString = '507f1f77bcf86cd799439011';
+        Joi.objectId().validate(hexString, (err, value) => {
 
             expect(err).to.not.exist();
             expect(value.toHexString()).to.equal(hexString);
@@ -35,10 +34,10 @@ describe('objectId', function () {
         });
     });
 
-    it('errors on non-hex string', function (done) {
+    it('errors on non-hex string', (done) => {
 
-        var invalidString = 'a string';
-        Joi.objectId().validate(invalidString, function (err, value) {
+        const invalidString = 'a string';
+        Joi.objectId().validate(invalidString, (err, value) => {
 
             expect(err).to.exist();
             expect(value).to.equal(invalidString);
@@ -46,9 +45,9 @@ describe('objectId', function () {
         });
     });
 
-    it('validates an objectId', function (done) {
+    it('validates an objectId', (done) => {
 
-        var schema = Joi.objectId().required();
+        const schema = Joi.objectId().required();
         Helper.validate(schema, [
             [null, false],
             [new ObjectID('507f1f77bcf86cd799439011'), true],
