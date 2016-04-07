@@ -14,11 +14,11 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
-    "bson": "^0.2.19",
     "hoek": "3.x.x",
-    "topo": "2.x.x",
     "isemail": "2.x.x",
-    "moment": "2.x.x"
+    "moment": "2.x.x",
+    "mongorito": "^2.0.0",
+    "topo": "2.x.x"
   },
   "devDependencies": {
     "code": "2.x.x",

@@ -5,7 +5,7 @@ const Lab = require('lab');
 const Code = require('code');
 const Joi = require('../lib');
 const Helper = require('./helper');
-const ObjectID = require('bson').BSONPure.ObjectID;
+const ObjectID = require('mongorito').ObjectID;
 
 
 // Declare internals
