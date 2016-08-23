@@ -45,13 +45,27 @@ describe('objectId', () => {
         });
     });
 
+    it('validates a null', (done) => {
+
+        const schema = Joi.objectId().required();
+        Helper.validate(schema, [
+            [null, false, null, '"value" must be an objectId']
+        ], done);
+    });
+
     it('validates an objectId', (done) => {
 
         const schema = Joi.objectId().required();
         Helper.validate(schema, [
-            [null, false],
-            [new ObjectID('507f1f77bcf86cd799439011'), true],
-            ['', false]
+            [new ObjectID('507f1f77bcf86cd799439011'), true]
+        ], done);
+    });
+
+    it('validates a string', (done) => {
+
+        const schema = Joi.objectId().required();
+        Helper.validate(schema, [
+            ['abc', false, null, '"value" must be an objectId']
         ], done);
     });
 });
