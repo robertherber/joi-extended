@@ -220,7 +220,7 @@ describe('errors', () => {
 
     it('allows html escaping', (done) => {
 
-        Joi.string().options({ language: { root: 'blah', label: 'bleh' } }).validate(4, (err, value) => {
+        Joi.string().options({ language: { root: 'blah' } }).label('bleh').validate(4, (err, value) => {
 
             expect(err.message).to.equal('"bleh" must be a string');
             done();
@@ -231,7 +231,7 @@ describe('errors', () => {
 
         Joi.object({ length: Joi.number().min(3).required() }).validate({ length: 1 }, (err) => {
 
-            expect(err.details).to.deep.equal([{
+            expect(err.details).to.equal([{
                 message: '"length" must be larger than or equal to 3',
                 path: 'length',
                 type: 'number.min',
@@ -278,6 +278,89 @@ describe('errors', () => {
                 done();
             }
         });
+    });
+
+    it('returns custom error', (done) => {
+
+        const schema = Joi.object({
+            a: Joi.string(),
+            b: {
+                c: Joi.number().strict().error(new Error('Really wanted a number!'))
+            }
+        });
+
+        Joi.validate({ a: 'abc', b: { c: 'x' } }, schema, (err) => {
+
+            expect(err).to.exist();
+            expect(err.isJoi).to.not.exist();
+            expect(err.message).to.equal('Really wanted a number!');
+            done();
+        });
+    });
+
+    it('returns first custom error with multiple errors', (done) => {
+
+        const schema = Joi.object({
+            a: Joi.string(),
+            b: {
+                c: Joi.number().error(new Error('Really wanted a number!'))
+            }
+        }).options({ abortEarly: false });
+
+        Joi.validate({ a: 22, b: { c: 'x' } }, schema, (err) => {
+
+            expect(err).to.exist();
+            expect(err.isJoi).to.not.exist();
+            expect(err.message).to.equal('Really wanted a number!');
+            done();
+        });
+    });
+
+    it('returns first error with multiple errors (first not custom)', (done) => {
+
+        const schema = Joi.object({
+            a: Joi.string(),
+            b: {
+                c: Joi.number().error(new Error('Really wanted a number!'))
+            }
+        });
+
+        Joi.validate({ a: 22, b: { c: 'x' } }, schema, (err) => {
+
+            expect(err).to.exist();
+            expect(err.isJoi).to.be.true();
+            done();
+        });
+    });
+
+    it('errors on invalid error option', (done) => {
+
+        expect(() => {
+
+            Joi.object({
+                a: Joi.string(),
+                b: {
+                    c: Joi.number().error('Really wanted a number!')
+                }
+            });
+        }).to.throw('Must provide a valid Error object');
+
+        done();
+    });
+
+    it('errors on missing error option', (done) => {
+
+        expect(() => {
+
+            Joi.object({
+                a: Joi.string(),
+                b: {
+                    c: Joi.number().error()
+                }
+            });
+        }).to.throw('Must provide a valid Error object');
+
+        done();
     });
 
     describe('annotate()', () => {

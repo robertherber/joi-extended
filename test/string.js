@@ -27,8 +27,19 @@ describe('string', () => {
 
         const schema = Joi.string();
         Helper.validate(schema, [
-            [true, false],
-            [false, false]
+            [true, false, null, '"value" must be a string'],
+            [false, false, null, '"value" must be a string']
+        ], done);
+    });
+
+    it('fails on integer', (done) => {
+
+        const schema = Joi.string();
+        Helper.validate(schema, [
+            [123, false, null, '"value" must be a string'],
+            [0, false, null, '"value" must be a string'],
+            ['123', true],
+            ['0', true]
         ], done);
     });
 
@@ -39,8 +50,8 @@ describe('string', () => {
             Helper.validate(Joi.string().valid('a', 'b'), [
                 ['a', true],
                 ['b', true],
-                ['A', false],
-                ['B', false]
+                ['A', false, null, '"value" must be one of [a, b]'],
+                ['B', false, null, '"value" must be one of [a, b]']
             ], done);
         });
 
@@ -51,7 +62,7 @@ describe('string', () => {
                 ['b', true],
                 ['A', true],
                 ['B', true],
-                [4, false]
+                [4, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -62,7 +73,7 @@ describe('string', () => {
                 ['b', true],
                 ['A', true],
                 ['B', true],
-                [4, false],
+                [4, false, null, '"value" must be a string'],
                 [5, true]
             ], done);
         });
@@ -73,8 +84,8 @@ describe('string', () => {
         it('invalidates case sensitive values', (done) => {
 
             Helper.validate(Joi.string().invalid('a', 'b'), [
-                ['a', false],
-                ['b', false],
+                ['a', false, null, '"value" contains an invalid value'],
+                ['b', false, null, '"value" contains an invalid value'],
                 ['A', true],
                 ['B', true]
             ], done);
@@ -83,10 +94,10 @@ describe('string', () => {
         it('invalidates case insensitive values', (done) => {
 
             Helper.validate(Joi.string().invalid('a', 'b').insensitive(), [
-                ['a', false],
-                ['b', false],
-                ['A', false],
-                ['B', false]
+                ['a', false, null, '"value" contains an invalid value'],
+                ['b', false, null, '"value" contains an invalid value'],
+                ['A', false, null, '"value" contains an invalid value'],
+                ['B', false, null, '"value" contains an invalid value']
             ], done);
         });
     });
@@ -125,7 +136,7 @@ describe('string', () => {
             const schema = Joi.string().min(2, 'utf8');
             Helper.validate(schema, [
                 ['\u00bd', true],
-                ['a', false]
+                ['a', false, null, '"value" length must be at least 2 characters long']
             ], done);
         });
 
@@ -134,7 +145,6 @@ describe('string', () => {
             const schema = Joi.object({ a: Joi.number(), b: Joi.string().min(Joi.ref('a'), 'utf8') });
             Helper.validate(schema, [
                 [{ a: 2, b: '\u00bd' }, true],
-                [{ a: 2, b: 'a' }, false],
                 [{ a: 2, b: 'a' }, false, null, 'child "b" fails because ["b" length must be at least 2 characters long]']
             ], done);
         });
@@ -144,7 +154,6 @@ describe('string', () => {
             const schema = Joi.object({ b: Joi.string().min(Joi.ref('$a'), 'utf8') });
             Helper.validate(schema, [
                 [{ b: '\u00bd' }, true, { context: { a: 2 } }],
-                [{ b: 'a' }, false, { context: { a: 2 } }],
                 [{ b: 'a' }, false, { context: { a: 2 } }, 'child "b" fails because ["b" length must be at least 2 characters long]']
             ], done);
         });
@@ -201,7 +210,7 @@ describe('string', () => {
 
             const schema = Joi.string().max(1, 'utf8');
             Helper.validate(schema, [
-                ['\u00bd', false],
+                ['\u00bd', false, null, '"value" length must be less than or equal to 1 characters long'],
                 ['a', true]
             ], done);
         });
@@ -211,7 +220,6 @@ describe('string', () => {
             const schema = Joi.object({ a: Joi.number(), b: Joi.string().max(Joi.ref('a'), 'utf8') });
             Helper.validate(schema, [
                 [{ a: 2, b: '\u00bd' }, true],
-                [{ a: 2, b: 'three' }, false],
                 [{ a: 2, b: 'three' }, false, null, 'child "b" fails because ["b" length must be less than or equal to 2 characters long]']
             ], done);
         });
@@ -221,7 +229,6 @@ describe('string', () => {
             const schema = Joi.object({ b: Joi.string().max(Joi.ref('$a'), 'utf8') });
             Helper.validate(schema, [
                 [{ b: '\u00bd' }, true, { context: { a: 2 } }],
-                [{ b: 'three' }, false, { context: { a: 2 } }],
                 [{ b: 'three' }, false, { context: { a: 2 } }, 'child "b" fails because ["b" length must be less than or equal to 2 characters long]']
             ], done);
         });
@@ -275,8 +282,8 @@ describe('string', () => {
                     ['4222222222222', true],    // visa
                     ['4012888888881881', true], // visa
                     ['4111111111111111', true], // visa
-                    ['4111111111111112', false],
-                    [null, false]
+                    ['4111111111111112', false, null, '"value" must be a credit card'],
+                    [null, false, null, '"value" must be a string']
                 ], done);
             });
         });
@@ -316,7 +323,7 @@ describe('string', () => {
             const schema = Joi.string().length(2, 'utf8');
             Helper.validate(schema, [
                 ['\u00bd', true],
-                ['a', false]
+                ['a', false, null, '"value" length must be 2 characters long']
             ], done);
         });
 
@@ -325,7 +332,6 @@ describe('string', () => {
             const schema = Joi.object({ a: Joi.number(), b: Joi.string().length(Joi.ref('a'), 'utf8') });
             Helper.validate(schema, [
                 [{ a: 2, b: '\u00bd' }, true],
-                [{ a: 2, b: 'a' }, false],
                 [{ a: 2, b: 'a' }, false, null, 'child "b" fails because ["b" length must be 2 characters long]']
             ], done);
         });
@@ -335,8 +341,8 @@ describe('string', () => {
             const schema = Joi.object({ b: Joi.string().length(Joi.ref('$a'), 'utf8') });
             Helper.validate(schema, [
                 [{ b: '\u00bd' }, true, { context: { a: 2 } }],
-                [{ b: 'a' }, false, { context: { a: 2 } }],
-                [{ b: 'a' }, false, { context: { a: 2 } }, 'child "b" fails because ["b" length must be 2 characters long]']
+                [{ b: 'a' }, false, { context: { a: 2 } }, 'child "b" fails because ["b" length must be 2 characters long]'],
+                [{ b: 'a' }, false, { context: { a: 2 } }, 'child "b" fails because ["b" length must be 2 characters long]', '']
             ], done);
         });
 
@@ -467,10 +473,10 @@ describe('string', () => {
             Helper.validate(schema, [
                 ['joe@example.com', true],
                 ['"joe"@example.com', true],
-                ['@iaminvalid.com', false],
+                ['@iaminvalid.com', false, null, '"value" must be a valid email'],
                 ['joe@[IPv6:2a00:1450:4001:c02::1b]', true],
-                ['12345678901234567890123456789012345678901234567890123456789012345@walmartlabs.com', false],
-                ['123456789012345678901234567890123456789012345678901234567890@12345678901234567890123456789012345678901234567890123456789.12345678901234567890123456789012345678901234567890123456789.12345678901234567890123456789012345678901234567890123456789.12345.toolong.com', false]
+                ['12345678901234567890123456789012345678901234567890123456789012345@walmartlabs.com', false, null, '"value" must be a valid email'],
+                ['123456789012345678901234567890123456789012345678901234567890@12345678901234567890123456789012345678901234567890123456789.12345678901234567890123456789012345678901234567890123456789.12345678901234567890123456789012345678901234567890123456789.12345.toolong.com', false, null, '"value" must be a valid email']
             ], done);
         });
 
@@ -480,7 +486,7 @@ describe('string', () => {
             Helper.validate(schema, [
                 ['joe@example.com', true],
                 ['joe@example.org', true],
-                ['joe@example.edu', false]
+                ['joe@example.edu', false, null, '"value" must be a valid email']
             ], done);
         });
 
@@ -490,7 +496,7 @@ describe('string', () => {
             Helper.validate(schema, [
                 ['joe@example.com', true],
                 ['joe@example.org', true],
-                ['joe@example.edu', false]
+                ['joe@example.edu', false, null, '"value" must be a valid email']
             ], done);
         });
 
@@ -498,8 +504,8 @@ describe('string', () => {
 
             const schema = Joi.string().email({ minDomainAtoms: 4 });
             Helper.validate(schema, [
-                ['joe@example.com', false],
-                ['joe@www.example.com', false],
+                ['joe@example.com', false, null, '"value" must be a valid email'],
+                ['joe@www.example.com', false, null, '"value" must be a valid email'],
                 ['joe@sub.www.example.com', true]
             ], done);
         });
@@ -511,15 +517,15 @@ describe('string', () => {
                 ['joe@example.com', true],
                 ['joe@www.example.com', true],
                 ['joe@localhost', true],
-                ['joe', false]
+                ['joe', false, null, '"value" must be a valid email']
             ]);
 
             schema = Joi.string().email({ errorLevel: true });
             Helper.validate(schema, [
                 ['joe@example.com', true],
                 ['joe@www.example.com', true],
-                ['joe@localhost', false],
-                ['joe', false]
+                ['joe@localhost', false, null, '"value" must be a valid email'],
+                ['joe', false, null, '"value" must be a valid email']
             ], done);
         });
 
@@ -530,7 +536,7 @@ describe('string', () => {
                 ['joe@example.com', true],
                 ['joe@www.example.com', true],
                 ['joe@localhost', true],
-                ['joe', false]
+                ['joe', false, null, '"value" must be a valid email']
             ], done);
         });
 
@@ -555,13 +561,13 @@ describe('string', () => {
                 ['domain.local', true],
                 ['3domain.local', true],
                 ['hostname', true],
-                ['host:name', false],
-                ['-', false],
+                ['host:name', false, null, '"value" must be a valid hostname'],
+                ['-', false, null, '"value" must be a valid hostname'],
                 ['2387628', true],
-                ['01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789', false],
+                ['01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789', false, null, '"value" must be a valid hostname'],
                 ['::1', true],
                 ['0:0:0:0:0:0:0:1', true],
-                ['0:?:0:0:0:0:0:1', false]
+                ['0:?:0:0:0:0:0:1', false, null, '"value" must be a valid hostname']
             ], done);
         });
     });
@@ -575,9 +581,9 @@ describe('string', () => {
                 ['this is all lowercase', true],
                 ['5', true],
                 ['lower\tcase', true],
-                ['Uppercase', false],
-                ['MixEd cAsE', false],
-                [1, false]
+                ['Uppercase', false, null, '"value" must only contain lowercase characters'],
+                ['MixEd cAsE', false, null, '"value" must only contain lowercase characters'],
+                [1, false, null, '"value" must be a string']
             ], { convert: false }, done);
         });
 
@@ -599,7 +605,7 @@ describe('string', () => {
                 [' abc', true],
                 [' ABC', true],
                 ['ABC', true],
-                [1, false]
+                [1, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -610,7 +616,7 @@ describe('string', () => {
                 ['a\r b\n c', true, null, 'a b c'],
                 ['A\t B  C', true, null, 'a b c'],
                 ['ABC', true, null, 'abc'],
-                [1, false]
+                [1, false, null, '"value" must be a string']
             ], done);
         });
     });
@@ -624,9 +630,9 @@ describe('string', () => {
                 ['THIS IS ALL UPPERCASE', true],
                 ['5', true],
                 ['UPPER\nCASE', true],
-                ['lOWERCASE', false],
-                ['MixEd cAsE', false],
-                [1, false]
+                ['lOWERCASE', false, null, '"value" must only contain uppercase characters'],
+                ['MixEd cAsE', false, null, '"value" must only contain uppercase characters'],
+                [1, false, null, '"value" must be a string']
             ], { convert: false }, done);
         });
 
@@ -648,7 +654,7 @@ describe('string', () => {
                 [' abc', true],
                 [' ABC', true],
                 ['ABC', true],
-                [1, false]
+                [1, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -659,7 +665,7 @@ describe('string', () => {
                 ['a\r b\n c', true, null, 'A B C'],
                 ['A\t B  C', true, null, 'A B C'],
                 ['ABC', true, null, 'ABC'],
-                [1, false]
+                [1, false, null, '"value" must be a string']
             ], done);
         });
     });
@@ -670,9 +676,9 @@ describe('string', () => {
 
             const schema = Joi.string().trim();
             Helper.validateOptions(schema, [
-                [' something', false],
-                ['something ', false],
-                ['something\n', false],
+                [' something', false, null, '"value" must not have leading or trailing whitespace'],
+                ['something ', false, null, '"value" must not have leading or trailing whitespace'],
+                ['something\n', false, null, '"value" must not have leading or trailing whitespace'],
                 ['some thing', true],
                 ['something', true]
             ], { convert: false }, done);
@@ -704,8 +710,8 @@ describe('string', () => {
 
             const schema = Joi.string().min(4).trim();
             Helper.validate(schema, [
-                [' a ', false],
-                ['abc ', false],
+                [' a ', false, null, '"value" length must be at least 4 characters long'],
+                ['abc ', false, null, '"value" length must be at least 4 characters long'],
                 ['abcd ', true]
             ], done);
         });
@@ -714,7 +720,7 @@ describe('string', () => {
 
             const schema = Joi.string().max(4).trim();
             Helper.validate(schema, [
-                [' abcde ', false],
+                [' abcde ', false, null, '"value" length must be less than or equal to 4 characters long'],
                 ['abc ', true],
                 ['abcd ', true]
             ], done);
@@ -724,8 +730,8 @@ describe('string', () => {
 
             const schema = Joi.string().length(4).trim();
             Helper.validate(schema, [
-                [' ab ', false],
-                ['abc ', false],
+                [' ab ', false, null, '"value" length must be 4 characters long'],
+                ['abc ', false, null, '"value" length must be 4 characters long'],
                 ['abcd ', true]
             ], done);
         });
@@ -804,7 +810,7 @@ describe('string', () => {
 
             const schema = Joi.string().min(4).replace(/\s+/g, ' ');
             Helper.validate(schema, [
-                ['   a   ', false],
+                ['   a   ', false, null, '"value" length must be at least 4 characters long'],
                 ['abc    ', true, null, 'abc '],
                 ['a\t\rbc', true, null, 'a bc']
             ], done);
@@ -823,7 +829,7 @@ describe('string', () => {
 
             const schema = Joi.string().length(5).replace(/\s+/g, ' ');
             Helper.validate(schema, [
-                ['a    bc', false],
+                ['a    bc', false, null, '"value" length must be 5 characters long'],
                 ['a\tb\nc', true, null, 'a b c']
             ], done);
         });
@@ -855,149 +861,149 @@ describe('string', () => {
 
     describe('ip()', () => {
 
-        const invalidIPs = [
-            ['ASDF', false],
-            ['192.0.2.16:80/30', false],
-            ['192.0.2.16a', false],
-            ['qwerty', false],
-            ['127.0.0.1:8000', false],
-            ['ftp://www.example.com', false],
-            ['Bananas in pajamas are coming down the stairs', false]
-        ];
+        const prepareIps = function (ips) {
 
-        const invalidIPv4s = [
-            ['0.0.0.0/33', false],
-            ['256.0.0.0/0', false],
-            ['255.255.255.256/32', false],
-            ['256.0.0.0', false],
-            ['255.255.255.256', false]
-        ];
+            return function (success, message) {
 
-        const invalidIPv6s = [
-            ['2001:db8::7/33', false],
-            ['1080:0:0:0:8:800:200C:417G', false]
-        ];
-
-        const invalidIPvFutures = [
-            ['v1.09azAZ-._~!$&\'()*+,;=:/33', false],
-            ['v1.09#', false]
-        ];
-
-        const validIPv4sWithCidr = function (success) {
-
-            return [
-                ['0.0.0.0/32', success],
-                ['255.255.255.255/0', success],
-                ['127.0.0.1/0', success],
-                ['192.168.2.1/0', success],
-                ['0.0.0.3/2', success],
-                ['0.0.0.7/3', success],
-                ['0.0.0.15/4', success],
-                ['0.0.0.31/5', success],
-                ['0.0.0.63/6', success],
-                ['0.0.0.127/7', success],
-                ['01.020.030.100/7', success],
-                ['0.0.0.0/0', success],
-                ['00.00.00.00/0', success],
-                ['000.000.000.000/32', success]
-            ];
+                message = message || '';
+                return ips.map((ip) => [ip, success, null, !success && message ? message : ip]);
+            };
         };
 
-        const validIPv4sWithoutCidr = function (success) {
+        const invalidIPs = function (message) {
 
-            return [
-                ['0.0.0.0', success],
-                ['255.255.255.255', success],
-                ['127.0.0.1', success],
-                ['192.168.2.1', success],
-                ['0.0.0.3', success],
-                ['0.0.0.7', success],
-                ['0.0.0.15', success],
-                ['0.0.0.31', success],
-                ['0.0.0.63', success],
-                ['0.0.0.127', success],
-                ['01.020.030.100', success],
-                ['0.0.0.0', success],
-                ['00.00.00.00', success],
-                ['000.000.000.000', success]
-            ];
+            return prepareIps([
+                'ASDF',
+                '192.0.2.16:80/30',
+                '192.0.2.16a',
+                'qwerty',
+                '127.0.0.1:8000',
+                'ftp://www.example.com',
+                'Bananas in pajamas are coming down the stairs'
+            ])(false, message);
         };
 
-        const validIPv6sWithCidr = function (success) {
+        const invalidIPv4s = function (message) {
 
-            return [
-                ['2001:db8::7/32', success],
-                ['a:b:c:d:e::1.2.3.4/13', success],
-                ['FEDC:BA98:7654:3210:FEDC:BA98:7654:3210/0', success],
-                ['FEDC:BA98:7654:3210:FEDC:BA98:7654:3210/32', success],
-                ['1080:0:0:0:8:800:200C:417A/27', success]
-            ];
+            return prepareIps([
+                '0.0.0.0/33',
+                '256.0.0.0/0',
+                '255.255.255.256/32',
+                '256.0.0.0',
+                '255.255.255.256'
+            ])(false, message);
         };
 
-        const validIPv6sWithoutCidr = function (success) {
+        const invalidIPv6s = function (message) {
 
-            return [
-                ['2001:db8::7', success],
-                ['a:b:c:d:e::1.2.3.4', success],
-                ['FEDC:BA98:7654:3210:FEDC:BA98:7654:3210', success],
-                ['FEDC:BA98:7654:3210:FEDC:BA98:7654:3210', success],
-                ['1080:0:0:0:8:800:200C:417A', success],
-                ['::1:2:3:4:5:6:7', success],
-                ['::1:2:3:4:5:6', success],
-                ['1::1:2:3:4:5:6', success],
-                ['::1:2:3:4:5', success],
-                ['1::1:2:3:4:5', success],
-                ['2:1::1:2:3:4:5', success],
-                ['::1:2:3:4', success],
-                ['1::1:2:3:4', success],
-                ['2:1::1:2:3:4', success],
-                ['3:2:1::1:2:3:4', success],
-                ['::1:2:3', success],
-                ['1::1:2:3', success],
-                ['2:1::1:2:3', success],
-                ['3:2:1::1:2:3', success],
-                ['4:3:2:1::1:2:3', success],
-                ['::1:2', success],
-                ['1::1:2', success],
-                ['2:1::1:2', success],
-                ['3:2:1::1:2', success],
-                ['4:3:2:1::1:2', success],
-                ['5:4:3:2:1::1:2', success],
-                ['::1', success],
-                ['1::1', success],
-                ['2:1::1', success],
-                ['3:2:1::1', success],
-                ['4:3:2:1::1', success],
-                ['5:4:3:2:1::1', success],
-                ['6:5:4:3:2:1::1', success],
-                ['::', success],
-                ['1::', success],
-                ['2:1::', success],
-                ['3:2:1::', success],
-                ['4:3:2:1::', success],
-                ['5:4:3:2:1::', success],
-                ['6:5:4:3:2:1::', success],
-                ['7:6:5:4:3:2:1::', success]
-            ];
+            return prepareIps([
+                '2001:db8::7/33',
+                '1080:0:0:0:8:800:200C:417G'
+            ])(false, message);
         };
 
-        const validIPvFuturesWithCidr = function (success) {
+        const invalidIPvFutures = function (message) {
 
-            return [
-                ['v1.09azAZ-._~!$&\'()*+,;=:/32', success]
-            ];
+            return prepareIps([
+                'v1.09azAZ-._~!$&\'()*+,;=:/33',
+                'v1.09#'
+            ])(false, message);
         };
 
-        const validIPvFuturesWithoutCidr = function (success) {
+        const validIPv4sWithCidr = prepareIps([
+            '0.0.0.0/32',
+            '255.255.255.255/0',
+            '127.0.0.1/0',
+            '192.168.2.1/0',
+            '0.0.0.3/2',
+            '0.0.0.7/3',
+            '0.0.0.15/4',
+            '0.0.0.31/5',
+            '0.0.0.63/6',
+            '0.0.0.127/7',
+            '01.020.030.100/7',
+            '0.0.0.0/0',
+            '00.00.00.00/0',
+            '000.000.000.000/32'
+        ]);
 
-            return [
-                ['v1.09azAZ-._~!$&\'()*+,;=:', success]
-            ];
-        };
+        const validIPv4sWithoutCidr = prepareIps([
+            '0.0.0.0',
+            '255.255.255.255',
+            '127.0.0.1',
+            '192.168.2.1',
+            '0.0.0.3',
+            '0.0.0.7',
+            '0.0.0.15',
+            '0.0.0.31',
+            '0.0.0.63',
+            '0.0.0.127',
+            '01.020.030.100',
+            '0.0.0.0',
+            '00.00.00.00',
+            '000.000.000.000'
+        ]);
+
+        const validIPv6sWithCidr = prepareIps([
+            '2001:db8::7/32',
+            'a:b:c:d:e::1.2.3.4/13',
+            'FEDC:BA98:7654:3210:FEDC:BA98:7654:3210/0',
+            'FEDC:BA98:7654:3210:FEDC:BA98:7654:3210/32',
+            '1080:0:0:0:8:800:200C:417A/27'
+        ]);
+
+        const validIPv6sWithoutCidr = prepareIps([
+            '2001:db8::7',
+            'a:b:c:d:e::1.2.3.4',
+            'FEDC:BA98:7654:3210:FEDC:BA98:7654:3210',
+            'FEDC:BA98:7654:3210:FEDC:BA98:7654:3210',
+            '1080:0:0:0:8:800:200C:417A',
+            '::1:2:3:4:5:6:7',
+            '::1:2:3:4:5:6',
+            '1::1:2:3:4:5:6',
+            '::1:2:3:4:5',
+            '1::1:2:3:4:5',
+            '2:1::1:2:3:4:5',
+            '::1:2:3:4',
+            '1::1:2:3:4',
+            '2:1::1:2:3:4',
+            '3:2:1::1:2:3:4',
+            '::1:2:3',
+            '1::1:2:3',
+            '2:1::1:2:3',
+            '3:2:1::1:2:3',
+            '4:3:2:1::1:2:3',
+            '::1:2',
+            '1::1:2',
+            '2:1::1:2',
+            '3:2:1::1:2',
+            '4:3:2:1::1:2',
+            '5:4:3:2:1::1:2',
+            '::1',
+            '1::1',
+            '2:1::1',
+            '3:2:1::1',
+            '4:3:2:1::1',
+            '5:4:3:2:1::1',
+            '6:5:4:3:2:1::1',
+            '::',
+            '1::',
+            '2:1::',
+            '3:2:1::',
+            '4:3:2:1::',
+            '5:4:3:2:1::',
+            '6:5:4:3:2:1::',
+            '7:6:5:4:3:2:1::'
+        ]);
+
+        const validIPvFuturesWithCidr = prepareIps(['v1.09azAZ-._~!$&\'()*+,;=:/32']);
+
+        const validIPvFuturesWithoutCidr = prepareIps(['v1.09azAZ-._~!$&\'()*+,;=:']);
 
         it('should validate all ip addresses with optional CIDR by default', (done) => {
 
             const schema = Joi.string().ip();
+            const message = '"value" must be a valid ip address with a optional CIDR';
             Helper.validate(schema, []
                 .concat(validIPv4sWithCidr(true))
                 .concat(validIPv4sWithoutCidr(true))
@@ -1005,15 +1011,16 @@ describe('string', () => {
                 .concat(validIPv6sWithoutCidr(true))
                 .concat(validIPvFuturesWithCidr(true))
                 .concat(validIPvFuturesWithoutCidr(true))
-                .concat(invalidIPs)
-                .concat(invalidIPv4s)
-                .concat(invalidIPv6s)
-                .concat(invalidIPvFutures), done);
+                .concat(invalidIPs(message))
+                .concat(invalidIPv4s(message))
+                .concat(invalidIPv6s(message))
+                .concat(invalidIPvFutures(message)), done);
         });
 
         it('should validate all ip addresses with an optional CIDR', (done) => {
 
             const schema = Joi.string().ip({ cidr: 'optional' });
+            const message = '"value" must be a valid ip address with a optional CIDR';
             Helper.validate(schema, []
                 .concat(validIPv4sWithCidr(true))
                 .concat(validIPv4sWithoutCidr(true))
@@ -1021,42 +1028,44 @@ describe('string', () => {
                 .concat(validIPv6sWithoutCidr(true))
                 .concat(validIPvFuturesWithCidr(true))
                 .concat(validIPvFuturesWithoutCidr(true))
-                .concat(invalidIPs)
-                .concat(invalidIPv4s)
-                .concat(invalidIPv6s)
-                .concat(invalidIPvFutures), done);
+                .concat(invalidIPs(message))
+                .concat(invalidIPv4s(message))
+                .concat(invalidIPv6s(message))
+                .concat(invalidIPvFutures(message)), done);
         });
 
         it('should validate all ip addresses with a required CIDR', (done) => {
 
             const schema = Joi.string().ip({ cidr: 'required' });
+            const message = '"value" must be a valid ip address with a required CIDR';
             Helper.validate(schema, []
                 .concat(validIPv4sWithCidr(true))
-                .concat(validIPv4sWithoutCidr(false))
+                .concat(validIPv4sWithoutCidr(false, message))
                 .concat(validIPv6sWithCidr(true))
-                .concat(validIPv6sWithoutCidr(false))
+                .concat(validIPv6sWithoutCidr(false, message))
                 .concat(validIPvFuturesWithCidr(true))
-                .concat(validIPvFuturesWithoutCidr(false))
-                .concat(invalidIPs)
-                .concat(invalidIPv4s)
-                .concat(invalidIPv6s)
-                .concat(invalidIPvFutures), done);
+                .concat(validIPvFuturesWithoutCidr(false, message))
+                .concat(invalidIPs(message))
+                .concat(invalidIPv4s(message))
+                .concat(invalidIPv6s(message))
+                .concat(invalidIPvFutures(message)), done);
         });
 
         it('should validate all ip addresses with a forbidden CIDR', (done) => {
 
             const schema = Joi.string().ip({ cidr: 'forbidden' });
+            const message = '"value" must be a valid ip address with a forbidden CIDR';
             Helper.validate(schema, []
-                .concat(validIPv4sWithCidr(false))
+                .concat(validIPv4sWithCidr(false, message))
                 .concat(validIPv4sWithoutCidr(true))
-                .concat(validIPv6sWithCidr(false))
+                .concat(validIPv6sWithCidr(false, message))
                 .concat(validIPv6sWithoutCidr(true))
-                .concat(validIPvFuturesWithCidr(false))
+                .concat(validIPvFuturesWithCidr(false, message))
                 .concat(validIPvFuturesWithoutCidr(true))
-                .concat(invalidIPs)
-                .concat(invalidIPv4s)
-                .concat(invalidIPv6s)
-                .concat(invalidIPvFutures), done);
+                .concat(invalidIPs(message))
+                .concat(invalidIPv4s(message))
+                .concat(invalidIPv6s(message))
+                .concat(invalidIPvFutures(message)), done);
         });
 
         it('throws when options is not an object', (done) => {
@@ -1148,65 +1157,69 @@ describe('string', () => {
             it('should validate all ipv4 addresses with a default CIDR strategy', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv4' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4] with a optional CIDR';
                 Helper.validate(schema, []
                     .concat(validIPv4sWithCidr(true))
                     .concat(validIPv4sWithoutCidr(true))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv4 addresses with an optional CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv4', cidr: 'optional' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4] with a optional CIDR';
                 Helper.validate(schema, []
                     .concat(validIPv4sWithCidr(true))
                     .concat(validIPv4sWithoutCidr(true))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv4 addresses with a required CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv4', cidr: 'required' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4] with a required CIDR';
                 Helper.validate(schema, []
                     .concat(validIPv4sWithCidr(true))
-                    .concat(validIPv4sWithoutCidr(false))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPv4sWithoutCidr(false, message))
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv4 addresses with a forbidden CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv4', cidr: 'forbidden' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4] with a forbidden CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
                     .concat(validIPv4sWithoutCidr(true))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
         });
 
@@ -1215,65 +1228,69 @@ describe('string', () => {
             it('should validate all ipv6 addresses with a default CIDR strategy', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv6' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv6] with a optional CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
                     .concat(validIPv6sWithCidr(true))
                     .concat(validIPv6sWithoutCidr(true))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv6 addresses with an optional CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv6', cidr: 'optional' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv6] with a optional CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
                     .concat(validIPv6sWithCidr(true))
                     .concat(validIPv6sWithoutCidr(true))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv6 addresses with a required CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv6', cidr: 'required' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv6] with a required CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
                     .concat(validIPv6sWithCidr(true))
-                    .concat(validIPv6sWithoutCidr(false))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPv6sWithoutCidr(false, message))
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv6 addresses with a forbidden CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipv6', cidr: 'forbidden' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv6] with a forbidden CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
-                    .concat(validIPv6sWithCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
+                    .concat(validIPv6sWithCidr(false, message))
                     .concat(validIPv6sWithoutCidr(true))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
         });
 
@@ -1282,65 +1299,69 @@ describe('string', () => {
             it('should validate all ipvfuture addresses with a default CIDR strategy', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipvfuture' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipvfuture] with a optional CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
                     .concat(validIPvFuturesWithCidr(true))
                     .concat(validIPvFuturesWithoutCidr(true))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipvfuture addresses with an optional CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipvfuture', cidr: 'optional' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipvfuture] with a optional CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
                     .concat(validIPvFuturesWithCidr(true))
                     .concat(validIPvFuturesWithoutCidr(true))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipvfuture addresses with a required CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipvfuture', cidr: 'required' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipvfuture] with a required CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
                     .concat(validIPvFuturesWithCidr(true))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipvfuture addresses with a forbidden CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: 'ipvfuture', cidr: 'forbidden' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipvfuture] with a forbidden CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
-                    .concat(validIPv4sWithoutCidr(false))
-                    .concat(validIPv6sWithCidr(false))
-                    .concat(validIPv6sWithoutCidr(false))
-                    .concat(validIPvFuturesWithCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
+                    .concat(validIPv4sWithoutCidr(false, message))
+                    .concat(validIPv6sWithCidr(false, message))
+                    .concat(validIPv6sWithoutCidr(false, message))
+                    .concat(validIPvFuturesWithCidr(false, message))
                     .concat(validIPvFuturesWithoutCidr(true))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
         });
 
@@ -1349,65 +1370,69 @@ describe('string', () => {
             it('should validate all ipv4 and ipv6 addresses with a default CIDR strategy', (done) => {
 
                 const schema = Joi.string().ip({ version: ['ipv4', 'ipv6'] });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4, ipv6] with a optional CIDR';
                 Helper.validate(schema, []
                     .concat(validIPv4sWithCidr(true))
                     .concat(validIPv4sWithoutCidr(true))
                     .concat(validIPv6sWithCidr(true))
                     .concat(validIPv6sWithoutCidr(true))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv4 and ipv6 addresses with an optional CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: ['ipv4', 'ipv6'], cidr: 'optional' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4, ipv6] with a optional CIDR';
                 Helper.validate(schema, []
                     .concat(validIPv4sWithCidr(true))
                     .concat(validIPv4sWithoutCidr(true))
                     .concat(validIPv6sWithCidr(true))
                     .concat(validIPv6sWithoutCidr(true))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv4 and ipv6 addresses with a required CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: ['ipv4', 'ipv6'], cidr: 'required' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4, ipv6] with a required CIDR';
                 Helper.validate(schema, []
                     .concat(validIPv4sWithCidr(true))
-                    .concat(validIPv4sWithoutCidr(false))
+                    .concat(validIPv4sWithoutCidr(false, message))
                     .concat(validIPv6sWithCidr(true))
-                    .concat(validIPv6sWithoutCidr(false))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPv6sWithoutCidr(false, message))
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
 
             it('should validate all ipv4 and ipv6 addresses with a forbidden CIDR', (done) => {
 
                 const schema = Joi.string().ip({ version: ['ipv4', 'ipv6'], cidr: 'forbidden' });
+                const message = '"value" must be a valid ip address of one of the following versions [ipv4, ipv6] with a forbidden CIDR';
                 Helper.validate(schema, []
-                    .concat(validIPv4sWithCidr(false))
+                    .concat(validIPv4sWithCidr(false, message))
                     .concat(validIPv4sWithoutCidr(true))
-                    .concat(validIPv6sWithCidr(false))
+                    .concat(validIPv6sWithCidr(false, message))
                     .concat(validIPv6sWithoutCidr(true))
-                    .concat(validIPvFuturesWithCidr(false))
-                    .concat(validIPvFuturesWithoutCidr(false))
-                    .concat(invalidIPs)
-                    .concat(invalidIPv4s)
-                    .concat(invalidIPv6s)
-                    .concat(invalidIPvFutures), done);
+                    .concat(validIPvFuturesWithCidr(false, message))
+                    .concat(validIPvFuturesWithoutCidr(false, message))
+                    .concat(invalidIPs(message))
+                    .concat(invalidIPv4s(message))
+                    .concat(invalidIPv6s(message))
+                    .concat(invalidIPvFutures(message)), done);
             });
         });
     });
@@ -1426,7 +1451,7 @@ describe('string', () => {
                 ['ftp://ftp.is.co.za/rfc/rfc1808.txt', true],
                 ['http://www.ietf.org/rfc/rfc2396.txt', true],
                 ['ldap://[2001:db8::7]/c=GB?objectClass?one', true],
-                ['ldap://2001:db8::7/c=GB?objectClass?one', false],
+                ['ldap://2001:db8::7/c=GB?objectClass?one', false, null, '"value" must be a valid uri'],
                 ['mailto:John.Doe@example.com', true],
                 ['news:comp.infosystems.www.servers.unix', true],
                 ['tel:+1-816-555-1212', true],
@@ -1440,9 +1465,9 @@ describe('string', () => {
                 ['coap://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]', true],
                 ['http://[1080:0:0:0:8:800:200C:417A]', true],
                 ['http://v1.09azAZ-._~!$&\'()*+,;=:', true], // This doesn't look valid, but it is. The `v1.09azAZ-._~!$&\'()*+,;=` part is a valid registered name as it has no invalid characters
-                ['http://a:b:c:d:e::1.2.3.4', false],
-                ['coap://FEDC:BA98:7654:3210:FEDC:BA98:7654:3210', false],
-                ['http://1080:0:0:0:8:800:200C:417A', false],
+                ['http://a:b:c:d:e::1.2.3.4', false, null, '"value" must be a valid uri'],
+                ['coap://FEDC:BA98:7654:3210:FEDC:BA98:7654:3210', false, null, '"value" must be a valid uri'],
+                ['http://1080:0:0:0:8:800:200C:417A', false, null, '"value" must be a valid uri'],
                 ['http://127.0.0.1:8000/foo?bar', true],
                 ['http://asdf:qwer@localhost:8000', true],
                 ['http://user:pass%3A@localhost:80', true],
@@ -1472,10 +1497,10 @@ describe('string', () => {
                 ['http://_jabber._tcp.google.com:80/test', true],
                 ['http://user:pass@_jabber._tcp.google.com:80/test', true],
                 ['http://[fe80::1]/a/b?a=b#abc', true],
-                ['http://fe80::1/a/b?a=b#abc', false],
+                ['http://fe80::1/a/b?a=b#abc', false, null, '"value" must be a valid uri'],
                 ['http://user:password@[3ffe:2a00:100:7031::1]:8080', true],
                 ['coap://[1080:0:0:0:8:800:200C:417A]:61616/', true],
-                ['coap://1080:0:0:0:8:800:200C:417A:61616/', false],
+                ['coap://1080:0:0:0:8:800:200C:417A:61616/', false, null, '"value" must be a valid uri'],
                 ['git+http://github.com/joyent/node.git', true],
                 ['http://bucket_name.s3.amazonaws.com/image.jpg', true],
                 ['dot.test://foo/bar', true],
@@ -1515,16 +1540,16 @@ describe('string', () => {
                 ['http://a/g', true],
                 ['http://a/g', true],
                 ['file:/asda', true],
-                ['qwerty', false],
-                ['invalid uri', false],
-                ['1http://google.com', false],
-                ['http://testdomain`,.<>/?\'";{}][++\\|~!@#$%^&*().org', false],
-                ['', false],
-                ['(╯°□°)╯︵ ┻━┻', false],
-                ['one/two/three?value=abc&value2=123#david-rules', false],
-                ['//username:password@test.example.com/one/two/three?value=abc&value2=123#david-rules', false],
-                ['http://a\r" \t\n<\'b:b@c\r\nd/e?f', false],
-                ['/absolute', false]
+                ['qwerty', false, null, '"value" must be a valid uri'],
+                ['invalid uri', false, null, '"value" must be a valid uri'],
+                ['1http://google.com', false, null, '"value" must be a valid uri'],
+                ['http://testdomain`,.<>/?\'";{}][++\\|~!@#$%^&*().org', false, null, '"value" must be a valid uri'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                ['(╯°□°)╯︵ ┻━┻', false, null, '"value" must be a valid uri'],
+                ['one/two/three?value=abc&value2=123#david-rules', false, null, '"value" must be a valid uri'],
+                ['//username:password@test.example.com/one/two/three?value=abc&value2=123#david-rules', false, null, '"value" must be a valid uri'],
+                ['http://a\r" \t\n<\'b:b@c\r\nd/e?f', false, null, '"value" must be a valid uri'],
+                ['/absolute', false, null, '"value" must be a valid uri']
             ], done);
         });
 
@@ -1536,10 +1561,10 @@ describe('string', () => {
 
             Helper.validate(schema, [
                 ['http://google.com', true],
-                ['https://google.com', false],
-                ['ftp://google.com', false],
-                ['file:/asdf', false],
-                ['/path?query=value#hash', false]
+                ['https://google.com', false, null, '"value" must be a valid uri with a scheme matching the http pattern'],
+                ['ftp://google.com', false, null, '"value" must be a valid uri with a scheme matching the http pattern'],
+                ['file:/asdf', false, null, '"value" must be a valid uri with a scheme matching the http pattern'],
+                ['/path?query=value#hash', false, null, '"value" must be a valid uri with a scheme matching the http pattern']
             ], done);
         });
 
@@ -1552,9 +1577,9 @@ describe('string', () => {
             Helper.validate(schema, [
                 ['http://google.com', true],
                 ['https://google.com', true],
-                ['ftp://google.com', false],
-                ['file:/asdf', false],
-                ['/path?query=value#hash', false]
+                ['ftp://google.com', false, null, '"value" must be a valid uri with a scheme matching the https? pattern'],
+                ['file:/asdf', false, null, '"value" must be a valid uri with a scheme matching the https? pattern'],
+                ['/path?query=value#hash', false, null, '"value" must be a valid uri with a scheme matching the https? pattern']
             ], done);
         });
 
@@ -1570,7 +1595,7 @@ describe('string', () => {
                 ['ftp://google.com', true],
                 ['file:/asdf', true],
                 ['git+http://github.com/hapijs/joi', true],
-                ['/path?query=value#hash', false]
+                ['/path?query=value#hash', false, null, '"value" must be a valid uri with a scheme matching the https?|ftp|file|git\\+http pattern']
             ], done);
         });
 
@@ -1793,15 +1818,88 @@ describe('string', () => {
                 ['http://a/g', true],
                 ['file:/asda', true],
                 ['qwerty', true],
-                ['invalid uri', false],
-                ['1http://google.com', false],
-                ['http://testdomain`,.<>/?\'";{}][++\\|~!@#$%^&*().org', false],
-                ['', false],
-                ['(╯°□°)╯︵ ┻━┻', false],
+                ['invalid uri', false, null, '"value" must be a valid uri'],
+                ['1http://google.com', false, null, '"value" must be a valid uri'],
+                ['http://testdomain`,.<>/?\'";{}][++\\|~!@#$%^&*().org', false, null, '"value" must be a valid uri'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                ['(╯°□°)╯︵ ┻━┻', false, null, '"value" must be a valid uri'],
                 ['one/two/three?value=abc&value2=123#david-rules', true],
                 ['//username:password@test.example.com/one/two/three?value=abc&value2=123#david-rules', true],
-                ['http://a\r" \t\n<\'b:b@c\r\nd/e?f', false],
+                ['http://a\r" \t\n<\'b:b@c\r\nd/e?f', false, null, '"value" must be a valid uri'],
                 ['/absolute', true]
+            ], done);
+        });
+    });
+
+    describe('truncate()', () => {
+
+        it('switches the truncate flag', (done) => {
+
+            const schema = Joi.string().truncate();
+            const desc = schema.describe();
+            expect(desc).to.equal({
+                type: 'string',
+                invalids: [''],
+                flags: { truncate: true }
+            });
+            done();
+        });
+
+        it('switches the truncate flag with explicit value', (done) => {
+
+            const schema = Joi.string().truncate(true);
+            const desc = schema.describe();
+            expect(desc).to.equal({
+                type: 'string',
+                invalids: [''],
+                flags: { truncate: true }
+            });
+            done();
+        });
+
+        it('switches the truncate flag back', (done) => {
+
+            const schema = Joi.string().truncate().truncate(false);
+            const desc = schema.describe();
+            expect(desc).to.equal({
+                type: 'string',
+                invalids: [''],
+                flags: { truncate: false }
+            });
+            done();
+        });
+
+        it('does not change anything when used without max', (done) => {
+
+            const schema = Joi.string().min(2).truncate();
+            schema.validate('fooooooooooooooooooo', (err, value) => {
+
+                expect(err).to.not.exist();
+                expect(value).to.equal('fooooooooooooooooooo');
+                done();
+            });
+        });
+
+        it('truncates a string when used with max', (done) => {
+
+            const schema = Joi.string().max(5).truncate();
+
+            Helper.validate(schema, [
+                ['abc', true, null, 'abc'],
+                ['abcde', true, null, 'abcde'],
+                ['abcdef', true, null, 'abcde']
+            ], done);
+        });
+
+        it('truncates a string after transformations', (done) => {
+
+            const schema = Joi.string().max(5).truncate().trim().replace(/a/g, 'aa');
+
+            Helper.validate(schema, [
+                ['abc', true, null, 'aabc'],
+                ['abcde', true, null, 'aabcd'],
+                ['abcdef', true, null, 'aabcd'],
+                ['  abcdef  ', true, null, 'aabcd']
             ], done);
         });
     });
@@ -1812,15 +1910,15 @@ describe('string', () => {
 
             Helper.validate(Joi.string(), [
                 [undefined, true],
-                ['', false]
+                ['', false, null, '"value" is not allowed to be empty']
             ], done);
         });
 
         it('should, when .required(), deny undefined, deny empty string', (done) => {
 
             Helper.validate(Joi.string().required(), [
-                [undefined, false],
-                ['', false]
+                [undefined, false, null, '"value" is required'],
+                ['', false, null, '"value" is not allowed to be empty']
             ], done);
         });
 
@@ -1851,7 +1949,7 @@ describe('string', () => {
             Helper.validate(schema, [
                 ['test', true],
                 ['0', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -1860,8 +1958,8 @@ describe('string', () => {
             const schema = Joi.string().invalid('a', 'b', 'c');
             Helper.validate(schema, [
                 ['x', true],
-                ['a', false],
-                ['c', false]
+                ['a', false, null, '"value" contains an invalid value'],
+                ['c', false, null, '"value" contains an invalid value']
             ], done);
         });
 
@@ -1869,7 +1967,7 @@ describe('string', () => {
 
             const schema = Joi.string().valid('a', 'b', 'c');
             Helper.validate(schema, [
-                ['x', false],
+                ['x', false, null, '"value" must be one of [a, b, c]'],
                 ['a', true],
                 ['c', true]
             ], done);
@@ -1879,7 +1977,7 @@ describe('string', () => {
 
             const schema = Joi.string().valid(['a', 'b', 'c']);
             Helper.validate(schema, [
-                ['x', false],
+                ['x', false, null, '"value" must be one of [a, b, c]'],
                 ['a', true],
                 ['c', true]
             ], done);
@@ -1890,8 +1988,8 @@ describe('string', () => {
             const schema = Joi.string().min(3);
             Helper.validate(schema, [
                 ['test', true],
-                ['0', false],
-                [null, false]
+                ['0', false, null, '"value" length must be at least 3 characters long'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -1900,8 +1998,8 @@ describe('string', () => {
             const schema = Joi.string().min(0).required();
             Helper.validate(schema, [
                 ['0', true],
-                [null, false],
-                [undefined, false]
+                [null, false, null, '"value" must be a string'],
+                [undefined, false, null, '"value" is required']
             ], done);
         });
 
@@ -1909,7 +2007,7 @@ describe('string', () => {
 
             const schema = Joi.string().min(3);
             Helper.validate(schema, [
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -1925,9 +2023,9 @@ describe('string', () => {
 
             const schema = Joi.string().max(3);
             Helper.validate(schema, [
-                ['test', false],
+                ['test', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['0', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -1943,9 +2041,9 @@ describe('string', () => {
 
             const schema = Joi.string().length(3);
             Helper.validate(schema, [
-                ['test', false],
-                ['0', false],
-                [null, false],
+                ['test', false, null, '"value" length must be 3 characters long'],
+                ['0', false, null, '"value" length must be 3 characters long'],
+                [null, false, null, '"value" must be a string'],
                 ['abc', true]
             ], done);
         });
@@ -1954,7 +2052,7 @@ describe('string', () => {
 
             const schema = Joi.string().regex(/^[0-9][-][a-z]+$/);
             Helper.validate(schema, [
-                ['van', false],
+                ['van', false, null, '"value" with value "van" fails to match the required pattern: /^[0-9][-][a-z]+$/'],
                 ['0-www', true]
             ], done);
         });
@@ -1973,8 +2071,8 @@ describe('string', () => {
             const schema = Joi.string().token();
             Helper.validate(schema, [
                 ['w0rld_of_w4lm4rtl4bs', true],
-                ['w0rld of_w4lm4rtl4bs', false],
-                ['abcd#f?h1j orly?', false]
+                ['w0rld of_w4lm4rtl4bs', false, null, '"value" must only contain alpha-numeric and underscore characters'],
+                ['abcd#f?h1j orly?', false, null, '"value" must only contain alpha-numeric and underscore characters']
             ], done);
         });
 
@@ -1982,9 +2080,9 @@ describe('string', () => {
 
             const schema = Joi.string().alphanum();
             Helper.validate(schema, [
-                ['w0rld of w4lm4rtl4bs', false],
+                ['w0rld of w4lm4rtl4bs', false, null, '"value" must only contain alpha-numeric characters'],
                 ['w0rldofw4lm4rtl4bs', true],
-                ['abcd#f?h1j orly?', false]
+                ['abcd#f?h1j orly?', false, null, '"value" must only contain alpha-numeric characters']
             ], done);
         });
 
@@ -2052,10 +2150,10 @@ describe('string', () => {
 
             const rule = Joi.string().required().min(3);
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 3 characters long'],
                 ['123', true],
-                ['', false],
-                [null, false]
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2065,9 +2163,9 @@ describe('string', () => {
             Helper.validate(rule, [
                 ['x', true],
                 ['123', true],
-                ['1234', false],
-                ['', false],
-                [null, false]
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2075,11 +2173,11 @@ describe('string', () => {
 
             const rule = Joi.string().allow('').min(3);
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 3 characters long'],
                 ['123', true],
                 ['1234', true],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2089,9 +2187,9 @@ describe('string', () => {
             Helper.validate(rule, [
                 ['x', true],
                 ['123', true],
-                ['1234', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2101,8 +2199,8 @@ describe('string', () => {
             Helper.validate(rule, [
                 ['x', true],
                 ['123', true],
-                ['1234', false],
-                ['', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
                 [null, true]
             ], done);
         });
@@ -2111,12 +2209,12 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3);
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
                 ['123', true],
-                ['1234', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['12', true],
-                ['', false],
-                [null, false]
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2124,12 +2222,12 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).allow('');
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
                 ['123', true],
-                ['1234', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['12', true],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2137,12 +2235,12 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).required();
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
                 ['123', true],
-                ['1234', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['12', true],
-                ['', false],
-                [null, false]
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2150,15 +2248,15 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).regex(/^a/);
             Helper.validate(rule, [
-                ['x', false],
-                ['123', false],
-                ['1234', false],
-                ['12', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
+                ['123', false, null, '"value" with value "123" fails to match the required pattern: /^a/'],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['12', false, null, '"value" with value "12" fails to match the required pattern: /^a/'],
                 ['ab', true],
                 ['abc', true],
-                ['abcd', false],
-                ['', false],
-                [null, false]
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2166,15 +2264,15 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).regex(/^a/).allow('');
             Helper.validate(rule, [
-                ['x', false],
-                ['123', false],
-                ['1234', false],
-                ['12', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
+                ['123', false, null, '"value" with value "123" fails to match the required pattern: /^a/'],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['12', false, null, '"value" with value "12" fails to match the required pattern: /^a/'],
                 ['ab', true],
                 ['abc', true],
-                ['abcd', false],
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2182,15 +2280,15 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).regex(/^a/).required();
             Helper.validate(rule, [
-                ['x', false],
-                ['123', false],
-                ['1234', false],
-                ['12', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
+                ['123', false, null, '"value" with value "123" fails to match the required pattern: /^a/'],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['12', false, null, '"value" with value "12" fails to match the required pattern: /^a/'],
                 ['ab', true],
                 ['abc', true],
-                ['abcd', false],
-                ['', false],
-                [null, false]
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2198,16 +2296,16 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).alphanum();
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
                 ['123', true],
-                ['1234', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['12', true],
                 ['ab', true],
                 ['abc', true],
-                ['abcd', false],
-                ['*ab', false],
-                ['', false],
-                [null, false]
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['*ab', false, null, '"value" must only contain alpha-numeric characters'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2215,16 +2313,16 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).alphanum().allow('');
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
                 ['123', true],
-                ['1234', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['12', true],
                 ['ab', true],
                 ['abc', true],
-                ['abcd', false],
-                ['*ab', false],
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['*ab', false, null, '"value" must only contain alpha-numeric characters'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2232,16 +2330,16 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).alphanum().required();
             Helper.validate(rule, [
-                ['x', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
                 ['123', true],
-                ['1234', false],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
                 ['12', true],
                 ['ab', true],
                 ['abc', true],
-                ['abcd', false],
-                ['*ab', false],
-                ['', false],
-                [null, false]
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['*ab', false, null, '"value" must only contain alpha-numeric characters'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2249,17 +2347,17 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).alphanum().regex(/^a/);
             Helper.validate(rule, [
-                ['x', false],
-                ['123', false],
-                ['1234', false],
-                ['12', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
+                ['123', false, null, '"value" with value "123" fails to match the required pattern: /^a/'],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['12', false, null, '"value" with value "12" fails to match the required pattern: /^a/'],
                 ['ab', true],
                 ['abc', true],
                 ['a2c', true],
-                ['abcd', false],
-                ['*ab', false],
-                ['', false],
-                [null, false]
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['*ab', false, null, '"value" must only contain alpha-numeric characters'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2267,17 +2365,17 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).alphanum().required().regex(/^a/);
             Helper.validate(rule, [
-                ['x', false],
-                ['123', false],
-                ['1234', false],
-                ['12', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
+                ['123', false, null, '"value" with value "123" fails to match the required pattern: /^a/'],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['12', false, null, '"value" with value "12" fails to match the required pattern: /^a/'],
                 ['ab', true],
                 ['abc', true],
                 ['a2c', true],
-                ['abcd', false],
-                ['*ab', false],
-                ['', false],
-                [null, false]
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['*ab', false, null, '"value" must only contain alpha-numeric characters'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2285,17 +2383,17 @@ describe('string', () => {
 
             const rule = Joi.string().min(2).max(3).alphanum().allow('').regex(/^a/);
             Helper.validate(rule, [
-                ['x', false],
-                ['123', false],
-                ['1234', false],
-                ['12', false],
+                ['x', false, null, '"value" length must be at least 2 characters long'],
+                ['123', false, null, '"value" with value "123" fails to match the required pattern: /^a/'],
+                ['1234', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['12', false, null, '"value" with value "12" fails to match the required pattern: /^a/'],
                 ['ab', true],
                 ['abc', true],
                 ['a2c', true],
-                ['abcd', false],
-                ['*ab', false],
+                ['abcd', false, null, '"value" length must be less than or equal to 3 characters long'],
+                ['*ab', false, null, '"value" must only contain alpha-numeric characters'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2303,10 +2401,10 @@ describe('string', () => {
 
             const rule = Joi.string().email().min(8);
             Helper.validate(rule, [
-                ['x@x.com', false],
+                ['x@x.com', false, null, '"value" length must be at least 8 characters long'],
                 ['123@x.com', true],
-                ['', false],
-                [null, false]
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2314,12 +2412,12 @@ describe('string', () => {
 
             const rule = Joi.string().email().min(8).max(10);
             Helper.validate(rule, [
-                ['x@x.com', false],
+                ['x@x.com', false, null, '"value" length must be at least 8 characters long'],
                 ['123@x.com', true],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
-                ['', false],
-                [null, false]
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2327,12 +2425,12 @@ describe('string', () => {
 
             const rule = Joi.string().email().min(8).max(10).invalid('123@x.com');
             Helper.validate(rule, [
-                ['x@x.com', false],
-                ['123@x.com', false],
+                ['x@x.com', false, null, '"value" length must be at least 8 characters long'],
+                ['123@x.com', false, null, '"value" contains an invalid value'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
-                ['', false],
-                [null, false]
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2343,9 +2441,9 @@ describe('string', () => {
                 ['x@x.com', true],
                 ['123@x.com', true],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
-                ['', false],
-                [null, false]
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2354,11 +2452,11 @@ describe('string', () => {
             const rule = Joi.string().email().min(8).max(10).allow('x@x.com').invalid('123@x.com');
             Helper.validate(rule, [
                 ['x@x.com', true],
-                ['123@x.com', false],
+                ['123@x.com', false, null, '"value" contains an invalid value'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
-                ['', false],
-                [null, false]
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2367,11 +2465,11 @@ describe('string', () => {
             const rule = Joi.string().email().min(8).max(10).allow('x@x.com').invalid('123@x.com').allow('');
             Helper.validate(rule, [
                 ['x@x.com', true],
-                ['123@x.com', false],
+                ['123@x.com', false, null, '"value" contains an invalid value'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2382,9 +2480,9 @@ describe('string', () => {
                 ['x@x.com', true],
                 ['123@x.com', true],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2393,11 +2491,11 @@ describe('string', () => {
             const rule = Joi.string().email().min(8).max(10).allow('x@x.com').invalid('123@x.com').regex(/^1/);
             Helper.validate(rule, [
                 ['x@x.com', true],
-                ['123@x.com', false],
+                ['123@x.com', false, null, '"value" contains an invalid value'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
-                ['', false],
-                [null, false]
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2406,11 +2504,11 @@ describe('string', () => {
             const rule = Joi.string().email().min(8).max(10).allow('x@x.com').invalid('123@x.com').regex(/^1/).allow('');
             Helper.validate(rule, [
                 ['x@x.com', true],
-                ['123@x.com', false],
+                ['123@x.com', false, null, '"value" contains an invalid value'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2418,12 +2516,12 @@ describe('string', () => {
 
             const rule = Joi.string().email().min(8).max(10).allow('');
             Helper.validate(rule, [
-                ['x@x.com', false],
+                ['x@x.com', false, null, '"value" length must be at least 8 characters long'],
                 ['123@x.com', true],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2431,12 +2529,12 @@ describe('string', () => {
 
             const rule = Joi.string().email().min(8).max(10).regex(/^1234/);
             Helper.validate(rule, [
-                ['x@x.com', false],
-                ['123@x.com', false],
+                ['x@x.com', false, null, '"value" length must be at least 8 characters long'],
+                ['123@x.com', false, null, '"value" with value "123&#x40;x.com" fails to match the required pattern: /^1234/'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
-                ['', false],
-                [null, false]
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2444,12 +2542,12 @@ describe('string', () => {
 
             const rule = Joi.string().email().min(8).max(10).regex(/^1234/).allow('');
             Helper.validate(rule, [
-                ['x@x.com', false],
-                ['123@x.com', false],
+                ['x@x.com', false, null, '"value" length must be at least 8 characters long'],
+                ['123@x.com', false, null, '"value" with value "123&#x40;x.com" fails to match the required pattern: /^1234/'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2457,12 +2555,12 @@ describe('string', () => {
 
             const rule = Joi.string().email().min(8).max(10).regex(/^1234/).required();
             Helper.validate(rule, [
-                ['x@x.com', false],
-                ['123@x.com', false],
+                ['x@x.com', false, null, '"value" length must be at least 8 characters long'],
+                ['123@x.com', false, null, '"value" with value "123&#x40;x.com" fails to match the required pattern: /^1234/'],
                 ['1234@x.com', true],
-                ['12345@x.com', false],
-                ['', false],
-                [null, false]
+                ['12345@x.com', false, null, '"value" length must be less than or equal to 10 characters long'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2470,44 +2568,44 @@ describe('string', () => {
 
             Helper.validate(Joi.string().isoDate(), [
                 ['2013-06-07T14:21:46.295Z', true],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295-07:00', true],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46+07:00', true],
-                ['2013-06-07T14:21:46+07:000', false],
+                ['2013-06-07T14:21:46+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46-07:00', true],
                 ['2013-06-07T14:21Z', true],
                 ['2013-06-07T14:21+07:00', true],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07', true],
-                ['2013-06-07T', false],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21', true],
-                ['1-1-2013', false],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14.2334,4', true],
-                ['2013-06-07T14,23:34', false],
-                ['2013-06-07T24', false],
+                ['2013-06-07T14,23:34', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T24', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T24:00', true],
-                ['2013-06-07T24:21', false],
+                ['2013-06-07T24:21', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07 142146.295', true],
-                ['2013-06-07 146946.295', false],
+                ['2013-06-07 146946.295', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07 1421,44', true],
                 ['2013-W23', true],
                 ['2013-W23-1', true],
-                ['2013-W2311', false],
+                ['2013-W2311', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-W231', true],
-                ['2013-M231', false],
+                ['2013-M231', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-W23-1T14:21', true],
-                ['2013-W23-1T14:21:', false],
+                ['2013-W23-1T14:21:', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-W23-1T14:21:46+07:00', true],
-                ['2013-W23-1T14:21:46+07:000', false],
+                ['2013-W23-1T14:21:46+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-W23-1T14:21:46-07:00', true],
                 ['2013-184', true],
-                ['2013-1841', false]
+                ['2013-1841', false, null, '"value" must be a valid ISO 8601 date']
             ], done);
         });
 
@@ -2526,25 +2624,25 @@ describe('string', () => {
             const rule = Joi.string().isoDate().min(23);
             Helper.validate(rule, [
                 ['2013-06-07T14:21:46.295Z', true],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295-07:00', true],
-                ['2013-06-07T14:21:46Z', false],
-                ['2013-06-07T14:21:46Z0', false],
+                ['2013-06-07T14:21:46Z', false, null, '"value" length must be at least 23 characters long'],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46+07:00', true],
                 ['2013-06-07T14:21:46-07:00', true],
-                ['2013-06-07T14:21Z', false],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
-                ['2013-06-07T14:21-07:00', false],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21Z', false, null, '"value" length must be at least 23 characters long'],
+                ['2013-06-07T14:21+07:00', false, null, '"value" length must be at least 23 characters long'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21-07:00', false, null, '"value" length must be at least 23 characters long'],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 23 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 23 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2552,26 +2650,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23);
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
-                ['2013-06-07T14:21:46.295+07:00', false],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
                 ['2013-06-07T14:21+07:00', true],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2579,26 +2677,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).invalid('2013-06-07T14:21+07:00');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
-                ['2013-06-07T14:21:46.295+07:00', false],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:00', false, null, '"value" contains an invalid value'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2606,26 +2704,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).allow('2013-06-07T14:21:46.295+07:00');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
                 ['2013-06-07T14:21+07:00', true],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2633,26 +2731,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).allow('2013-06-07T14:21:46.295+07:00').invalid('2013-06-07T14:21+07:00');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:00', false, null, '"value" contains an invalid value'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2660,26 +2758,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).allow('2013-06-07T14:21:46.295+07:00').invalid('2013-06-07T14:21+07:00').allow('');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:00', false, null, '"value" contains an invalid value'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2687,26 +2785,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).allow('2013-06-07T14:21:46.295+07:00').allow('');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
                 ['2013-06-07T14:21+07:00', true],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2714,26 +2812,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).allow('2013-06-07T14:21:46.295+07:00').invalid('2013-06-07T14:21Z').regex(/Z$/);
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
-                ['2013-06-07T14:21Z', false],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
-                ['2013-06-07T14:21-07:00', false],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21Z', false, null, '"value" contains an invalid value'],
+                ['2013-06-07T14:21+07:00', false, null, '"value" with value "2013-06-07T14:21&#x2b;07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21-07:00', false, null, '"value" with value "2013-06-07T14:21-07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2741,26 +2839,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).allow('2013-06-07T14:21:46.295+07:00').invalid('2013-06-07T14:21Z').regex(/Z$/).allow('');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21:46.295+07:00', true],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
-                ['2013-06-07T14:21Z', false],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
-                ['2013-06-07T14:21-07:00', false],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21Z', false, null, '"value" contains an invalid value'],
+                ['2013-06-07T14:21+07:00', false, null, '"value" with value "2013-06-07T14:21&#x2b;07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21-07:00', false, null, '"value" with value "2013-06-07T14:21-07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2768,26 +2866,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).allow('');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
-                ['2013-06-07T14:21:46.295+07:00', false],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
                 ['2013-06-07T14:21+07:00', true],
-                ['2013-06-07T14:21+07:000', false],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
                 ['2013-06-07T14:21-07:00', true],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2795,26 +2893,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).regex(/Z$/);
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
-                ['2013-06-07T14:21:46.295+07:00', false],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
-                ['2013-06-07T14:21-07:00', false],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21+07:00', false, null, '"value" with value "2013-06-07T14:21&#x2b;07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21-07:00', false, null, '"value" with value "2013-06-07T14:21-07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2822,26 +2920,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).regex(/Z$/).allow('');
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
-                ['2013-06-07T14:21:46.295+07:00', false],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
-                ['2013-06-07T14:21-07:00', false],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
+                ['2013-06-07T14:21+07:00', false, null, '"value" with value "2013-06-07T14:21&#x2b;07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21-07:00', false, null, '"value" with value "2013-06-07T14:21-07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2849,26 +2947,26 @@ describe('string', () => {
 
             const rule = Joi.string().isoDate().min(17).max(23).regex(/Z$/).required();
             Helper.validate(rule, [
-                ['2013-06-07T14:21:46.295Z', false],
-                ['2013-06-07T14:21:46.295Z0', false],
-                ['2013-06-07T14:21:46.295+07:00', false],
-                ['2013-06-07T14:21:46.295+07:000', false],
-                ['2013-06-07T14:21:46.295-07:00', false],
+                ['2013-06-07T14:21:46.295Z', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46.295+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46.295-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21:46Z', true],
-                ['2013-06-07T14:21:46Z0', false],
-                ['2013-06-07T14:21:46+07:00', false],
-                ['2013-06-07T14:21:46-07:00', false],
+                ['2013-06-07T14:21:46Z0', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21:46+07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
+                ['2013-06-07T14:21:46-07:00', false, null, '"value" length must be less than or equal to 23 characters long'],
                 ['2013-06-07T14:21Z', true],
-                ['2013-06-07T14:21+07:00', false],
-                ['2013-06-07T14:21+07:000', false],
-                ['2013-06-07T14:21-07:00', false],
-                ['2013-06-07T14:21Z+7:00', false],
-                ['2013-06-07', false],
-                ['2013-06-07T', false],
-                ['2013-06-07T14:21', false],
-                ['1-1-2013', false],
-                ['', false],
-                [null, false]
+                ['2013-06-07T14:21+07:00', false, null, '"value" with value "2013-06-07T14:21&#x2b;07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21+07:000', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21-07:00', false, null, '"value" with value "2013-06-07T14:21-07:00" fails to match the required pattern: /Z$/'],
+                ['2013-06-07T14:21Z+7:00', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07', false, null, '"value" length must be at least 17 characters long'],
+                ['2013-06-07T', false, null, '"value" must be a valid ISO 8601 date'],
+                ['2013-06-07T14:21', false, null, '"value" length must be at least 17 characters long'],
+                ['1-1-2013', false, null, '"value" must be a valid ISO 8601 date'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2883,9 +2981,9 @@ describe('string', () => {
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
                 ['0c74f13f-fa83-4c48-9b33-68921dd72463', true],
                 ['b4b2fb69c6244e5eb0698e0c6ec66618', true],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false]
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID']
             ], done);
         });
 
@@ -2904,18 +3002,18 @@ describe('string', () => {
             const rule = Joi.string().guid().min(36);
             Helper.validate(rule, [
                 ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', true],
-                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false],
+                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false, null, '"value" length must be at least 36 characters long'],
                 ['69593D62-71EA-4548-85E4-04FC71357423', true],
-                ['677E2553DD4D43B09DA77414DB1EB8EA', false],
+                ['677E2553DD4D43B09DA77414DB1EB8EA', false, null, '"value" length must be at least 36 characters long'],
                 ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', true],
-                ['{7e9081b59a6d4cc1a8c347f69fb4198d}', false],
+                ['{7e9081b59a6d4cc1a8c347f69fb4198d}', false, null, '"value" length must be at least 36 characters long'],
                 ['0c74f13f-fa83-4c48-9b33-68921dd72463', true],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" length must be at least 36 characters long'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2923,19 +3021,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34);
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{B59511BD6A5F4DF09ECF562A108D8A2E}', true],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['677E2553DD4D43B09DA77414DB1EB8EA', true],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['b4b2fb69c6244e5eb0698e0c6ec66618', true],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2943,19 +3041,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).invalid('b4b2fb69c6244e5eb0698e0c6ec66618');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{B59511BD6A5F4DF09ECF562A108D8A2E}', true],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['677E2553DD4D43B09DA77414DB1EB8EA', true],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" contains an invalid value'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2963,19 +3061,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).allow('{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{B59511BD6A5F4DF09ECF562A108D8A2E}', true],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['677E2553DD4D43B09DA77414DB1EB8EA', true],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['b4b2fb69c6244e5eb0698e0c6ec66618', true],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
                 ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', true],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -2983,19 +3081,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).allow('{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D').invalid('b4b2fb69c6244e5eb0698e0c6ec66618');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{B59511BD6A5F4DF09ECF562A108D8A2E}', true],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['677E2553DD4D43B09DA77414DB1EB8EA', true],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" contains an invalid value'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
                 ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', true],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3003,19 +3101,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).allow('{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D').invalid('b4b2fb69c6244e5eb0698e0c6ec66618').allow('');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{B59511BD6A5F4DF09ECF562A108D8A2E}', true],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['677E2553DD4D43B09DA77414DB1EB8EA', true],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" contains an invalid value'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
                 ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', true],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3023,19 +3121,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).allow('{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D').allow('');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{B59511BD6A5F4DF09ECF562A108D8A2E}', true],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['677E2553DD4D43B09DA77414DB1EB8EA', true],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['b4b2fb69c6244e5eb0698e0c6ec66618', true],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
                 ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', true],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3043,19 +3141,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).allow('{D1A5279D-B27D-4CD4-A05E-EFDD53D08').invalid('b4b2fb69c6244e5eb0698e0c6ec66618').regex(/^{7e908/);
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
-                ['677E2553DD4D43B09DA77414DB1EB8EA', false],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false, null, '"value" with value "&#x7b;B59511BD6A5F4DF09ECF562A108D8A2E&#x7d;" fails to match the required pattern: /^{7e908/'],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['677E2553DD4D43B09DA77414DB1EB8EA', false, null, '"value" with value "677E2553DD4D43B09DA77414DB1EB8EA" fails to match the required pattern: /^{7e908/'],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" contains an invalid value'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
                 ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08', true],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3063,19 +3161,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).allow('{D1A5279D-B27D-4CD4-A05E-EFDD53D08').invalid('b4b2fb69c6244e5eb0698e0c6ec66618').regex(/^{7e908/).allow('');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
-                ['677E2553DD4D43B09DA77414DB1EB8EA', false],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false, null, '"value" with value "&#x7b;B59511BD6A5F4DF09ECF562A108D8A2E&#x7d;" fails to match the required pattern: /^{7e908/'],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['677E2553DD4D43B09DA77414DB1EB8EA', false, null, '"value" with value "677E2553DD4D43B09DA77414DB1EB8EA" fails to match the required pattern: /^{7e908/'],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" contains an invalid value'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
                 ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08', true],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3083,19 +3181,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).allow('');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{B59511BD6A5F4DF09ECF562A108D8A2E}', true],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['677E2553DD4D43B09DA77414DB1EB8EA', true],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['b4b2fb69c6244e5eb0698e0c6ec66618', true],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3103,19 +3201,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).regex(/^{7e9081/i);
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
-                ['677E2553DD4D43B09DA77414DB1EB8EA', false],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false, null, '"value" with value "&#x7b;B59511BD6A5F4DF09ECF562A108D8A2E&#x7d;" fails to match the required pattern: /^{7e9081/i'],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['677E2553DD4D43B09DA77414DB1EB8EA', false, null, '"value" with value "677E2553DD4D43B09DA77414DB1EB8EA" fails to match the required pattern: /^{7e9081/i'],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" with value "b4b2fb69c6244e5eb0698e0c6ec66618" fails to match the required pattern: /^{7e9081/i'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3123,19 +3221,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).regex(/^{7e9081/i).allow('');
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
-                ['677E2553DD4D43B09DA77414DB1EB8EA', false],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false, null, '"value" with value "&#x7b;B59511BD6A5F4DF09ECF562A108D8A2E&#x7d;" fails to match the required pattern: /^{7e9081/i'],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['677E2553DD4D43B09DA77414DB1EB8EA', false, null, '"value" with value "677E2553DD4D43B09DA77414DB1EB8EA" fails to match the required pattern: /^{7e9081/i'],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" with value "b4b2fb69c6244e5eb0698e0c6ec66618" fails to match the required pattern: /^{7e9081/i'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
                 ['', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3143,19 +3241,19 @@ describe('string', () => {
 
             const rule = Joi.string().guid().min(32).max(34).regex(/^{7e9081/i).required();
             Helper.validate(rule, [
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false],
-                ['69593D62-71EA-4548-85E4-04FC71357423', false],
-                ['677E2553DD4D43B09DA77414DB1EB8EA', false],
-                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['{B59511BD6A5F4DF09ECF562A108D8A2E}', false, null, '"value" with value "&#x7b;B59511BD6A5F4DF09ECF562A108D8A2E&#x7d;" fails to match the required pattern: /^{7e9081/i'],
+                ['69593D62-71EA-4548-85E4-04FC71357423', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['677E2553DD4D43B09DA77414DB1EB8EA', false, null, '"value" with value "677E2553DD4D43B09DA77414DB1EB8EA" fails to match the required pattern: /^{7e9081/i'],
+                ['{5ba3bba3-729a-4717-88c1-b7c4b7ba80db}', false, null, '"value" length must be less than or equal to 34 characters long'],
                 ['{7e9081b59a6d4cc1a8c347f69fb4198d}', true],
-                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false],
-                ['b4b2fb69c6244e5eb0698e0c6ec66618', false],
-                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false],
-                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false],
-                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false],
-                ['', false],
-                [null, false]
+                ['0c74f13f-fa83-4c48-9b33-68921dd72463', false, null, '"value" length must be less than or equal to 34 characters long'],
+                ['b4b2fb69c6244e5eb0698e0c6ec66618', false, null, '"value" with value "b4b2fb69c6244e5eb0698e0c6ec66618" fails to match the required pattern: /^{7e9081/i'],
+                ['{283B67B2-430F-4E6F-97E6-19041992-C1B0}', false, null, '"value" must be a valid GUID'],
+                ['{D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D', false, null, '"value" must be a valid GUID'],
+                ['D1A5279D-B27D-4CD4-A05E-EFDD53D08E8D}', false, null, '"value" must be a valid GUID'],
+                ['', false, null, '"value" is not allowed to be empty'],
+                [null, false, null, '"value" must be a string']
             ], done);
         });
 
@@ -3173,22 +3271,22 @@ describe('string', () => {
 
             const rule = Joi.string().uppercase().min(2).max(3).alphanum().valid('AB', 'BC');
             Helper.validate(rule, [
-                ['x', false],
-                ['123', false],
-                ['1234', false],
-                ['12', false],
+                ['x', false, null, '"value" must be one of [AB, BC]'],
+                ['123', false, null, '"value" must be one of [AB, BC]'],
+                ['1234', false, null, '"value" must be one of [AB, BC]'],
+                ['12', false, null, '"value" must be one of [AB, BC]'],
                 ['ab', true],
-                ['abc', false],
-                ['a2c', false],
-                ['abcd', false],
-                ['*ab', false],
-                ['', false],
+                ['abc', false, null, '"value" must be one of [AB, BC]'],
+                ['a2c', false, null, '"value" must be one of [AB, BC]'],
+                ['abcd', false, null, '"value" must be one of [AB, BC]'],
+                ['*ab', false, null, '"value" must be one of [AB, BC]'],
+                ['', false, null, '"value" is not allowed to be empty'],
                 ['bc', true],
                 ['BC', true],
-                ['de', false],
-                ['ABc', false],
+                ['de', false, null, '"value" must be one of [AB, BC]'],
+                ['ABc', false, null, '"value" must be one of [AB, BC]'],
                 ['AB', true],
-                [null, false]
+                [null, false, null, '"value" must be a string']
             ], done);
         });
     });

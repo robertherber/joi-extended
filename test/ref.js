@@ -42,7 +42,7 @@ describe('ref', () => {
             expect(err.message).to.equal('child "a" fails because ["a" must be one of [ref:b]]');
 
             Helper.validate(schema, [
-                [{ a: 5 }, false],
+                [{ a: 5 }, false, null, 'child "a" fails because ["a" must be one of [ref:b]]'],
                 [{ b: 5 }, true],
                 [{ a: 5, b: 5 }, true],
                 [{ a: '5', b: '5' }, true]
@@ -63,7 +63,7 @@ describe('ref', () => {
             expect(err.message).to.equal('child "a" fails because ["a" must be one of [ref:]]');
 
             Helper.validate(schema, [
-                [{ a: 5 }, false],
+                [{ a: 5 }, false, null, 'child "a" fails because ["a" must be one of [ref:]]'],
                 [{ '': 5 }, true],
                 [{ a: 5, '': 5 }, true],
                 [{ a: '5', '': '5' }, true]
@@ -86,9 +86,9 @@ describe('ref', () => {
             expect(err.message).to.equal('child "a" fails because ["a" must be one of [ref:b.c]]');
 
             Helper.validate(schema, [
-                [{ a: 5 }, false],
+                [{ a: 5 }, false, null, 'child "a" fails because ["a" must be one of [ref:b.c]]'],
                 [{ b: { c: 5 } }, true],
-                [{ a: 5, b: 5 }, false],
+                [{ a: 5, b: 5 }, false, null, 'child "b" fails because ["b" must be an object]'],
                 [{ a: '5', b: { c: '5' } }, true]
             ], done);
         });
@@ -180,7 +180,7 @@ describe('ref', () => {
         schema.validate({ b: 6 }, (err, value) => {
 
             expect(err).to.not.exist();
-            expect(value).to.deep.equal({ a: 6, b: 6 });
+            expect(value).to.equal({ a: 6, b: 6 });
             done();
         });
     });
@@ -195,7 +195,7 @@ describe('ref', () => {
         ab.validate({ b: '6' }, (err, value) => {
 
             expect(err).to.not.exist();
-            expect(value).to.deep.equal({ a: 6, b: 6 });
+            expect(value).to.equal({ a: 6, b: 6 });
 
             const ba = Joi.object({
                 b: Joi.number(),
@@ -205,7 +205,7 @@ describe('ref', () => {
             ba.validate({ b: '6' }, (err2, value2) => {
 
                 expect(err2).to.not.exist();
-                expect(value2).to.deep.equal({ a: 6, b: 6 });
+                expect(value2).to.equal({ a: 6, b: 6 });
                 done();
             });
         });
@@ -221,42 +221,42 @@ describe('ref', () => {
             [{ a: {} }, true],
             [{ a: { c: '5' }, b: 5 }, true],
             [{ a: { c: '5' }, b: 6, c: '6' }, true],
-            [{ a: { c: '5' }, b: 7, c: '6' }, false]
+            [{ a: { c: '5' }, b: 7, c: '6' }, false, null, 'child "b" fails because ["b" must be one of [ref:a.c], "b" must be one of [ref:c]]']
         ]);
 
         Helper.validate({ b, a, c }, [
             [{ a: {} }, true],
             [{ a: { c: '5' }, b: 5 }, true],
             [{ a: { c: '5' }, b: 6, c: '6' }, true],
-            [{ a: { c: '5' }, b: 7, c: '6' }, false]
+            [{ a: { c: '5' }, b: 7, c: '6' }, false, null, 'child "b" fails because ["b" must be one of [ref:a.c], "b" must be one of [ref:c]]']
         ]);
 
         Helper.validate({ b, c, a }, [
             [{ a: {} }, true],
             [{ a: { c: '5' }, b: 5 }, true],
             [{ a: { c: '5' }, b: 6, c: '6' }, true],
-            [{ a: { c: '5' }, b: 7, c: '6' }, false]
+            [{ a: { c: '5' }, b: 7, c: '6' }, false, null, 'child "b" fails because ["b" must be one of [ref:a.c], "b" must be one of [ref:c]]']
         ]);
 
         Helper.validate({ a, c, b }, [
             [{ a: {} }, true],
             [{ a: { c: '5' }, b: 5 }, true],
             [{ a: { c: '5' }, b: 6, c: '6' }, true],
-            [{ a: { c: '5' }, b: 7, c: '6' }, false]
+            [{ a: { c: '5' }, b: 7, c: '6' }, false, null, 'child "b" fails because ["b" must be one of [ref:a.c], "b" must be one of [ref:c]]']
         ]);
 
         Helper.validate({ c, a, b }, [
             [{ a: {} }, true],
             [{ a: { c: '5' }, b: 5 }, true],
             [{ a: { c: '5' }, b: 6, c: '6' }, true],
-            [{ a: { c: '5' }, b: 7, c: '6' }, false]
+            [{ a: { c: '5' }, b: 7, c: '6' }, false, null, 'child "b" fails because ["b" must be one of [ref:a.c], "b" must be one of [ref:c]]']
         ]);
 
         Helper.validate({ c, b, a }, [
             [{ a: {} }, true],
             [{ a: { c: '5' }, b: 5 }, true],
             [{ a: { c: '5' }, b: 6, c: '6' }, true],
-            [{ a: { c: '5' }, b: 7, c: '6' }, false]
+            [{ a: { c: '5' }, b: 7, c: '6' }, false, null, 'child "b" fails because ["b" must be one of [ref:a.c], "b" must be one of [ref:c]]']
         ], done);
     });
 
@@ -270,7 +270,7 @@ describe('ref', () => {
         Joi.validate({ b: 6 }, schema, { context: { x: 22 } }, (err, value) => {
 
             expect(err).to.not.exist();
-            expect(value).to.deep.equal({ a: 22, b: 6 });
+            expect(value).to.equal({ a: 22, b: 6 });
             done();
         });
     });
@@ -285,7 +285,7 @@ describe('ref', () => {
         Joi.validate({ b: 6 }, schema, { context: { x: 22 } }, (err, value) => {
 
             expect(err).to.not.exist();
-            expect(value).to.deep.equal({ a: 22, b: 6 });
+            expect(value).to.equal({ a: 22, b: 6 });
             done();
         });
     });
@@ -303,11 +303,11 @@ describe('ref', () => {
             expect(err.message).to.equal('child "a" fails because ["a" must be one of [context:x]]');
 
             Helper.validateOptions(schema, [
-                [{ a: 5 }, false],
+                [{ a: 5 }, false, null, 'child "a" fails because ["a" must be one of [context:x]]'],
                 [{ a: 22 }, true],
                 [{ b: 5 }, true],
                 [{ a: 22, b: 5 }, true],
-                [{ a: '22', b: '5' }, false]
+                [{ a: '22', b: '5' }, false, null, 'child "a" fails because ["a" must be one of [context:x]]']
             ], { context: { x: 22 } }, done);
         });
     });
@@ -320,13 +320,13 @@ describe('ref', () => {
 
         Helper.validate(schema, [
             [{}, true],
-            [{ a: 'x' }, false],
-            [{ a: true }, false],
+            [{ a: 'x' }, false, null, 'child "a" fails because ["a" is not allowed]'],
+            [{ a: true }, false, null, 'child "a" fails because ["a" is not allowed]'],
             [{}, true, { context: {} }],
-            [{ a: 'x' }, false, { context: {} }],
-            [{ a: true }, false, { context: {} }],
+            [{ a: 'x' }, false, { context: {} }, 'child "a" fails because ["a" is not allowed]'],
+            [{ a: true }, false, { context: {} }, 'child "a" fails because ["a" is not allowed]'],
             [{}, true, { context: { x: 1 } }],
-            [{ a: 'x' }, false, { context: { x: 1 } }],
+            [{ a: 'x' }, false, { context: { x: 1 } }, 'child "a" fails because ["a" must be a boolean]'],
             [{ a: true }, true, { context: { x: 1 } }]
         ], done);
     });
@@ -339,19 +339,19 @@ describe('ref', () => {
 
         Helper.validate(schema, [
             [{}, true],
-            [{ a: 'x' }, false],
-            [{ a: true }, false],
+            [{ a: 'x' }, false, null, 'child "a" fails because ["a" is not allowed]'],
+            [{ a: true }, false, null, 'child "a" fails because ["a" is not allowed]'],
             [{}, true, { context: {} }],
-            [{ a: 'x' }, false, { context: {} }],
-            [{ a: true }, false, { context: {} }],
+            [{ a: 'x' }, false, { context: {} }, 'child "a" fails because ["a" is not allowed]'],
+            [{ a: true }, false, { context: {} }, 'child "a" fails because ["a" is not allowed]'],
             [{}, true, { context: { x: 1 } }],
-            [{ a: 'x' }, false, { context: { x: 1 } }],
-            [{ a: true }, false, { context: { x: 1 } }],
+            [{ a: 'x' }, false, { context: { x: 1 } }, 'child "a" fails because ["a" is not allowed]'],
+            [{ a: true }, false, { context: { x: 1 } }, 'child "a" fails because ["a" is not allowed]'],
             [{}, true, { context: { x: {} } }],
-            [{ a: 'x' }, false, { context: { x: {} } }],
-            [{ a: true }, false, { context: { x: {} } }],
+            [{ a: 'x' }, false, { context: { x: {} } }, 'child "a" fails because ["a" is not allowed]'],
+            [{ a: true }, false, { context: { x: {} } }, 'child "a" fails because ["a" is not allowed]'],
             [{}, true, { context: { x: { y: 1 } } }],
-            [{ a: 'x' }, false, { context: { x: { y: 1 } } }],
+            [{ a: 'x' }, false, { context: { x: { y: 1 } } }, 'child "a" fails because ["a" must be a boolean]'],
             [{ a: true }, true, { context: { x: { y: 1 } } }]
         ], done);
     });
@@ -371,7 +371,7 @@ describe('ref', () => {
             })
             .describe();
 
-        expect(desc).to.deep.equal({
+        expect(desc).to.equal({
             type: 'alternatives',
             flags: { presence: 'ignore' },
             alternatives: [{

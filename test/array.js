@@ -82,7 +82,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal([1, 2, 3]);
+                expect(value).to.equal([1, 2, 3]);
                 done();
             });
         });
@@ -166,6 +166,16 @@ describe('array', () => {
             ], done);
         });
 
+        it('validates multiple types with stripUnknown (as an object)', (done) => {
+
+            const schema = Joi.array().items(Joi.number(), Joi.string()).options({ stripUnknown: { arrays: true, objects: false } });
+
+            Helper.validate(schema, [
+                [[1, 2, 'a'], true, null, [1, 2, 'a']],
+                [[1, { foo: 'bar' }, 'a', 2], true, null, [1, 'a', 2]]
+            ], done);
+        });
+
         it('allows forbidden to restrict values', (done) => {
 
             const schema = Joi.array().items(Joi.string().valid('four').forbidden(), Joi.string());
@@ -175,6 +185,25 @@ describe('array', () => {
 
                 expect(err).to.exist();
                 expect(err.message).to.equal('"value" at position 3 contains an excluded value');
+                done();
+            });
+        });
+
+        it('allows forbidden to restrict values (ref)', (done) => {
+
+            const schema = Joi.object({
+                array: Joi.array().items(Joi.valid(Joi.ref('value')).forbidden(), Joi.string()),
+                value: Joi.string().required()
+            });
+
+            const input = {
+                array: ['one', 'two', 'three', 'four'],
+                value: 'four'
+            };
+
+            schema.validate(input, (err, value) => {
+
+                expect(err).to.be.an.error('child "array" fails because ["array" at position 3 contains an excluded value]');
                 done();
             });
         });
@@ -213,7 +242,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(input);
+                expect(value).to.equal(input);
                 done();
             });
         });
@@ -252,7 +281,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(input);
+                expect(value).to.equal(input);
                 done();
             });
         });
@@ -265,7 +294,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(input);
+                expect(value).to.equal(input);
                 done();
             });
         });
@@ -302,7 +331,7 @@ describe('array', () => {
             schema.validate(['one', 'two', 3, 4], (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['one', 'two']);
+                expect(value).to.equal(['one', 'two']);
                 done();
             });
         });
@@ -315,7 +344,7 @@ describe('array', () => {
             const schema = Joi.array().min(2);
             Helper.validate(schema, [
                 [[1, 2], true],
-                [[1], false]
+                [[1], false, null, '"value" must contain at least 2 items']
             ], done);
         });
 
@@ -344,7 +373,7 @@ describe('array', () => {
 
             const schema = Joi.array().max(1);
             Helper.validate(schema, [
-                [[1, 2], false],
+                [[1, 2], false, null, '"value" must contain less than or equal to 1 items'],
                 [[1], true]
             ], done);
         });
@@ -375,7 +404,7 @@ describe('array', () => {
             const schema = Joi.array().length(2);
             Helper.validate(schema, [
                 [[1, 2], true],
-                [[1], false]
+                [[1], false, null, '"value" must contain 2 items']
             ], done);
         });
 
@@ -411,7 +440,7 @@ describe('array', () => {
         it('should, when .required(), deny undefined', (done) => {
 
             Helper.validate(Joi.array().required(), [
-                [undefined, false]
+                [undefined, false, null, '"value" is required']
             ], done);
         });
 
@@ -426,8 +455,8 @@ describe('array', () => {
         it('excludes values when items are forbidden', (done) => {
 
             Helper.validate(Joi.array().items(Joi.string().forbidden()), [
-                [['2', '1'], false],
-                [['1'], false],
+                [['2', '1'], false, null, '"value" at position 0 contains an excluded value'],
+                [['1'], false, null, '"value" at position 0 contains an excluded value'],
                 [[2], true]
             ], done);
         });
@@ -455,7 +484,7 @@ describe('array', () => {
             Helper.validate(Joi.array().items(Joi.number()), [
                 [[1, 2, 3], true],
                 [[50, 100, 1000], true],
-                [['a', 1, 2], false],
+                [['a', 1, 2], false, null, '"value" at position 0 fails because ["0" must be a number]'],
                 [['1', '2', 4], true]
             ], done);
         });
@@ -474,8 +503,8 @@ describe('array', () => {
 
             Helper.validate(Joi.array().items(Joi.object({ h1: Joi.number().required() })), [
                 [[{ h1: 1 }, { h1: 2 }, { h1: 3 }], true],
-                [[{ h2: 1, h3: 'somestring' }, { h1: 2 }, { h1: 3 }], false],
-                [[1, 2, [1]], false]
+                [[{ h2: 1, h3: 'somestring' }, { h1: 2 }, { h1: 3 }], false, null, '"value" at position 0 fails because [child "h1" fails because ["h1" is required]]'],
+                [[1, 2, [1]], false, null, '"value" at position 0 fails because ["0" must be an object]']
             ], done);
         });
 
@@ -483,7 +512,7 @@ describe('array', () => {
 
             Helper.validate(Joi.array().items(Joi.number()), [
                 [[1, 2, 3], true],
-                [[1, 2, [1]], false]
+                [[1, 2, [1]], false, null, '"value" at position 2 fails because ["2" must be a number]']
             ], done);
         });
 
@@ -510,7 +539,7 @@ describe('array', () => {
 
             Helper.validate(schema, [
                 [{ array: ['12345'] }, true],
-                [{ array: ['1'] }, false],
+                [{ array: ['1'] }, false, null, 'child "array" fails because ["array" at position 0 does not match any of the allowed types]'],
                 [{ array: [3] }, true],
                 [{ array: ['12345', 3] }, true]
             ], done);
@@ -524,8 +553,8 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal([1, 2]);
-                expect(input).to.deep.equal(['1', '2']);
+                expect(value).to.equal([1, 2]);
+                expect(input).to.equal(['1', '2']);
                 done();
             });
         });
@@ -538,7 +567,7 @@ describe('array', () => {
             Joi.validate(input, schema, { abortEarly: false }, (err, value) => {
 
                 expect(err).to.exist();
-                expect(err.details).to.deep.equal([{
+                expect(err.details).to.equal([{
                     message: '"value" must not be a sparse array',
                     path: '1',
                     type: 'array.sparse',
@@ -575,7 +604,7 @@ describe('array', () => {
 
             const schema = Joi.array();
             const desc = schema.describe();
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: false }
             });
@@ -586,7 +615,7 @@ describe('array', () => {
 
             const schema = Joi.array().sparse();
             const desc = schema.describe();
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: true }
             });
@@ -610,7 +639,7 @@ describe('array', () => {
                 .ordered(Joi.string().required());
             const desc = schema.describe();
             expect(desc.items).to.have.length(3);
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: false },
                 orderedItems: [{ type: 'number', invalids: [Infinity, -Infinity] }, { type: 'string', invalids: [''] }, { type: 'string', invalids: [''], flags: { presence: 'required' } }],
@@ -631,15 +660,15 @@ describe('array', () => {
             const schema = Joi.array().sparse().unique();
 
             Helper.validate(schema, [
-                [[2, 2], false],
-                [[0x2, 2], false],
-                [['duplicate', 'duplicate'], false],
-                [[{ a: 'b' }, { a: 'b' }], false],
-                [[buffer, buffer], false],
-                [[func, func], false],
-                [[now, now], false],
-                [[true, true], false],
-                [[undefined, undefined], false]
+                [[2, 2], false, null, '"value" position 1 contains a duplicate value'],
+                [[0x2, 2], false, null, '"value" position 1 contains a duplicate value'],
+                [['duplicate', 'duplicate'], false, null, '"value" position 1 contains a duplicate value'],
+                [[{ a: 'b' }, { a: 'b' }], false, null, '"value" position 1 contains a duplicate value'],
+                [[buffer, buffer], false, null, '"value" position 1 contains a duplicate value'],
+                [[func, func], false, null, '"value" position 1 contains a duplicate value'],
+                [[now, now], false, null, '"value" position 1 contains a duplicate value'],
+                [[true, true], false, null, '"value" position 1 contains a duplicate value'],
+                [[undefined, undefined], false, null, '"value" position 1 contains a duplicate value']
             ], done);
         });
 
@@ -672,6 +701,57 @@ describe('array', () => {
                 [[true, false], true]
             ], done);
         });
+
+        it('validates using a comparator', (done) => {
+
+            const schema = Joi.array().unique((left, right) => left.a === right.a);
+
+            Helper.validate(schema, [
+                [[{ a: 'b' }, { a: 'c' }], true],
+                [[{ a: 'b', c: 'd' }, { a: 'c', c: 'd' }], true],
+                [[{ a: 'b', c: 'd' }, { a: 'b', c: 'd' }], false, null, '"value" position 1 contains a duplicate value'],
+                [[{ a: 'b', c: 'c' }, { a: 'b', c: 'd' }], false, null, '"value" position 1 contains a duplicate value']
+            ], done);
+        });
+
+        it('validates using a comparator with different types', (done) => {
+
+            const schema = Joi.array().items(Joi.string(), Joi.object({ a: Joi.string() })).unique((left, right) => {
+
+                if (typeof left === 'object') {
+                    if (typeof right === 'object') {
+                        return left.a === right.a;
+                    }
+
+                    return left.a === right;
+                }
+
+                if (typeof right === 'object') {
+                    return left === right.a;
+                }
+
+                return left === right;
+            });
+
+            Helper.validate(schema, [
+                [[{ a: 'b' }, { a: 'c' }], true],
+                [[{ a: 'b' }, 'c'], true],
+                [[{ a: 'b' }, 'c', { a: 'd' }, 'e'], true],
+                [[{ a: 'b' }, { a: 'b' }], false, null, '"value" position 1 contains a duplicate value'],
+                [[{ a: 'b' }, 'b'], false, null, '"value" position 1 contains a duplicate value']
+            ], done);
+        });
+
+        it('fails with invalid comparator', (done) => {
+
+            expect(() => {
+
+                Joi.array().unique({});
+            }).to.throw(Error, 'comparator must be a function');
+
+            done();
+        });
+
     });
 
     describe('sparse()', () => {
@@ -681,8 +761,106 @@ describe('array', () => {
             const schema = Joi.array().items(Joi.number());
 
             Helper.validate(schema, [
-                [[undefined], false],
-                [[2, undefined], false]
+                [[undefined], false, null, '"value" must not be a sparse array'],
+                [[2, undefined], false, null, '"value" must not be a sparse array']
+            ], done);
+        });
+
+        it('errors on undefined value after validation', (done) => {
+
+            const schema = Joi.array().items(Joi.object().empty({}));
+
+            Helper.validate(schema, [
+                [[{ a: 1 }, {}, { c: 3 }], false, null, '"value" must not be a sparse array']
+            ], done);
+        });
+
+        it('errors on undefined value after validation with abortEarly false', (done) => {
+
+            const schema = Joi.array().items(Joi.object().empty({})).options({ abortEarly: false });
+
+            Helper.validate(schema, [
+                [[{ a: 1 }, {}, 3], false, null, '"value" must not be a sparse array. "value" at position 2 fails because ["2" must be an object]']
+            ], done);
+        });
+
+        it('errors on undefined value after validation with required', (done) => {
+
+            const schema = Joi.array().items(Joi.object().empty({}).required());
+
+            Helper.validate(schema, [
+                [[{}, { c: 3 }], false, null, '"value" at position 0 fails because ["0" is required]']
+            ], done);
+        });
+
+        it('errors on undefined value after custom validation with required', (done) => {
+
+            const customJoi = Joi.extend({
+                name: 'myType',
+                rules: [
+                    {
+                        name: 'foo',
+                        validate(params, value, state, options) {
+
+                            return undefined;
+                        }
+                    }
+                ]
+            });
+
+            const schema = Joi.array().items(customJoi.myType().foo().required());
+
+            Helper.validate(schema, [
+                [[{}, { c: 3 }], false, null, '"value" must not be a sparse array']
+            ], done);
+        });
+
+        it('errors on undefined value after custom validation with required and abortEarly false', (done) => {
+
+            const customJoi = Joi.extend({
+                name: 'myType',
+                rules: [
+                    {
+                        name: 'foo',
+                        validate(params, value, state, options) {
+
+                            return undefined;
+                        }
+                    }
+                ]
+            });
+
+            const schema = Joi.array().items(customJoi.myType().foo().required()).options({ abortEarly: false });
+
+            Helper.validate(schema, [
+                [[{}, { c: 3 }], false, null, '"value" must not be a sparse array. "value" must not be a sparse array']
+            ], done);
+        });
+
+        it('errors on undefined value after validation with required and abortEarly false', (done) => {
+
+            const schema = Joi.array().items(Joi.object().empty({}).required()).options({ abortEarly: false });
+
+            Helper.validate(schema, [
+                [[{}, 3], false, null, '"value" at position 0 fails because ["0" is required]. "value" at position 1 fails because ["1" must be an object]. "value" does not contain 1 required value(s)']
+            ], done);
+        });
+
+        it('errors on undefined value after validation with ordered', (done) => {
+
+            const schema = Joi.array().ordered(Joi.object().empty({}));
+
+            Helper.validate(schema, [
+                [[{}], false, null, '"value" must not be a sparse array']
+            ], done);
+        });
+
+        it('errors on undefined value after validation with ordered and abortEarly false', (done) => {
+
+            const schema = Joi.array().ordered(Joi.object().empty({})).options({ abortEarly: false });
+
+            Helper.validate(schema, [
+                [[{}, 3], false, null, '"value" must not be a sparse array. "value" at position 1 fails because array must contain at most 1 items']
             ], done);
         });
 
@@ -696,11 +874,38 @@ describe('array', () => {
             ], done);
         });
 
+        it('validates on undefined value after validation', (done) => {
+
+            const schema = Joi.array().items(Joi.object().empty({})).sparse();
+
+            Helper.validate(schema, [
+                [[{ a: 1 }, {}, { c: 3 }], true, null, [{ a: 1 }, undefined, { c: 3 }]]
+            ], done);
+        });
+
+        it('validates on undefined value after validation with required', (done) => {
+
+            const schema = Joi.array().items(Joi.object().empty({}).required()).sparse();
+
+            Helper.validate(schema, [
+                [[{ a: 1 }, {}, { c: 3 }], false, null, '"value" at position 1 fails because ["1" is required]']
+            ], done);
+        });
+
+        it('validates on undefined value after validation with ordered', (done) => {
+
+            const schema = Joi.array().ordered(Joi.object().empty({})).sparse();
+
+            Helper.validate(schema, [
+                [[{}], true, null, [undefined]]
+            ], done);
+        });
+
         it('switches the sparse flag', (done) => {
 
             const schema = Joi.array().sparse();
             const desc = schema.describe();
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: true }
             });
@@ -711,7 +916,7 @@ describe('array', () => {
 
             const schema = Joi.array().sparse(true);
             const desc = schema.describe();
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: true }
             });
@@ -722,7 +927,7 @@ describe('array', () => {
 
             const schema = Joi.array().sparse().sparse(false);
             const desc = schema.describe();
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: false }
             });
@@ -789,7 +994,7 @@ describe('array', () => {
 
             const schema = Joi.array().single(true);
             const desc = schema.describe();
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: false, single: true }
             });
@@ -800,7 +1005,7 @@ describe('array', () => {
 
             const schema = Joi.array().single().single(false);
             const desc = schema.describe();
-            expect(desc).to.deep.equal({
+            expect(desc).to.equal({
                 type: 'array',
                 flags: { sparse: false, single: false }
             });
@@ -816,7 +1021,18 @@ describe('array', () => {
             schema.validate(['one', 'two', 3, 4, true, false], (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['one', 'two']);
+                expect(value).to.equal(['one', 'two']);
+                done();
+            });
+        });
+
+        it('respects stripUnknown (as an object)', (done) => {
+
+            const schema = Joi.array().items(Joi.string()).options({ stripUnknown: { arrays: true, objects: false } });
+            schema.validate(['one', 'two', 3, 4, true, false], (err, value) => {
+
+                expect(err).to.not.exist();
+                expect(value).to.equal(['one', 'two']);
                 done();
             });
         });
@@ -854,7 +1070,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['s1', 2]);
+                expect(value).to.equal(['s1', 2]);
                 done();
             });
         });
@@ -867,7 +1083,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['s1', 2, 3]);
+                expect(value).to.equal(['s1', 2, 3]);
                 done();
             });
         });
@@ -880,7 +1096,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['s1', 2]);
+                expect(value).to.equal(['s1', 2]);
                 done();
             });
         });
@@ -893,7 +1109,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['s1', 2, undefined]);
+                expect(value).to.equal(['s1', 2, undefined]);
                 done();
             });
         });
@@ -906,7 +1122,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['s1', undefined, 3]);
+                expect(value).to.equal(['s1', undefined, 3]);
                 done();
             });
         });
@@ -918,7 +1134,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['s1', 2, 3, 4, 5]);
+                expect(value).to.equal(['s1', 2, 3, 4, 5]);
                 done();
             });
         });
@@ -1029,7 +1245,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal(['s1', 3]);
+                expect(value).to.equal(['s1', 3]);
                 done();
             });
         });
@@ -1041,7 +1257,7 @@ describe('array', () => {
             schema.validate(input, (err, value) => {
 
                 expect(err).to.not.exist();
-                expect(value).to.deep.equal([2]);
+                expect(value).to.equal([2]);
                 done();
             });
         });

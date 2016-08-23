@@ -1,5 +1,5 @@
 <!-- version -->
-# 8.0.5 API Reference
+# 9.0.4 API Reference
 <!-- versionstop -->
 
 <img src="https://raw.github.com/hapijs/joi/master/images/validation.png" align="right" />
@@ -11,8 +11,14 @@
   - [`compile(schema)`](#compileschema)
   - [`assert(value, schema, [message])`](#assertvalue-schema-message)
   - [`attempt(value, schema, [message])`](#attemptvalue-schema-message)
+  - [`ref(key, [options])`](#refkey-options)
   - [`isRef(ref)`](#isrefref)
   - [`reach(schema, path)`](#reachschema-path)
+  - [`extend(extension)`](#extendextension)
+    - [Terms](#terms)
+    - [Extension](#extension)
+    - [npm note](#npm-note)
+    - [Examples](#examples)
   - [`any`](#any)
     - [`any.allow(value)`](#anyallowvalue)
     - [`any.valid(value)` - aliases: `only`, `equal`](#anyvalidvalue---aliases-only-equal)
@@ -35,15 +41,16 @@
     - [`any.label(name)`](#anylabelname)
     - [`any.raw(isRaw)`](#anyrawisraw)
     - [`any.empty(schema)`](#anyemptyschema)
+    - [`any.error(err)`](#anyerrorerr)
   - [`array`](#array)
-    - [`array.sparse(enabled)`](#arraysparseenabled)
-    - [`array.single(enabled)`](#arraysingleenabled)
+    - [`array.sparse([enabled])`](#arraysparseenabled)
+    - [`array.single([enabled])`](#arraysingleenabled)
     - [`array.items(type)`](#arrayitemstype)
     - [`array.ordered(type)`](#arrayorderedtype)
     - [`array.min(limit)`](#arrayminlimit)
     - [`array.max(limit)`](#arraymaxlimit)
     - [`array.length(limit)`](#arraylengthlimit)
-    - [`array.unique()`](#arrayunique)
+    - [`array.unique([comparator])`](#arrayuniquecomparator)
   - [`boolean`](#boolean)
   - [`binary`](#binary)
     - [`binary.encoding(encoding)`](#binaryencodingencoding)
@@ -60,6 +67,7 @@
     - [`func.arity(n)`](#funcarityn)
     - [`func.minArity(n)`](#funcminarityn)
     - [`func.maxArity(n)`](#funcmaxarityn)
+    - [`func.ref()`](#funcref)
   - [`number`](#number)
     - [`number.min(limit)`](#numberminlimit)
     - [`number.max(limit)`](#numbermaxlimit)
@@ -89,12 +97,14 @@
     - [`object.assert(ref, schema, [message])`](#objectassertref-schema-message)
     - [`object.unknown([allow])`](#objectunknownallow)
     - [`object.type(constructor, [name])`](#objecttypeconstructor-name)
+    - [`object.schema()`](#objectschema)
     - [`object.requiredKeys(children)`](#objectrequiredkeyschildren)
     - [`object.optionalKeys(children)`](#objectoptionalkeyschildren)
   - [`string`](#string)
     - [`string.insensitive()`](#stringinsensitive)
     - [`string.min(limit, [encoding])`](#stringminlimit-encoding)
     - [`string.max(limit, [encoding])`](#stringmaxlimit-encoding)
+    - [`string.truncate([enabled])`](#stringtruncateenabled)
     - [`string.creditCard()`](#stringcreditcard)
     - [`string.length(limit, [encoding])`](#stringlengthlimit-encoding)
     - [`string.regex(pattern, [name])`](#stringregexpattern-name)
@@ -114,7 +124,7 @@
   - [`alternatives`](#alternatives)
     - [`alternatives.try(schemas)`](#alternativestryschemas)
     - [`alternatives.when(ref, options)`](#alternativeswhenref-options)
-  - [`ref(key, [options])`](#refkey-options)
+  - [`lazy(fn)`](#lazyfn)
 - [Errors](#errors)
 
 <!-- tocstop -->
@@ -131,7 +141,11 @@ Validates a value using the given schema and options where:
   - `convert` - when `true`, attempts to cast values to the required types (e.g. a string to a number). Defaults to `true`.
   - `allowUnknown` - when `true`, allows object to contain unknown keys which are ignored. Defaults to `false`.
   - `skipFunctions` - when `true`, ignores unknown keys with a function value. Defaults to `false`.
-  - `stripUnknown` - when `true`, unknown keys are deleted (only when value is an object or an array). Defaults to `false`.
+  - `stripUnknown` - remove unknown elements from objects and arrays. Defaults to `false`.
+    - when `true`, all unknown elements will be removed.
+    - when an `object` :
+      - `arrays` - set to `true` to remove unknown items from arrays.
+      - `objects` - set to `true` to remove unknown keys from objects.
   - `language` - overrides individual error messages. Defaults to no override (`{}`). Messages apply the following rules :
     - variables are put between curly braces like `{{var}}`, if prefixed by a `!` like `{{!var}}`, it will be html escaped
     - strings are always preceeded by the key name, unless a `{{key}}` is found elsewhere or if the string is prefixed by a `!!`
@@ -142,13 +156,14 @@ Validates a value using the given schema and options where:
   - `context` - provides an external data set to be used in [references](#refkey-options). Can only be set as an external option to
     `validate()` and not using `any.options()`.
   - `noDefaults` - when `true`, do not apply default values. Defaults to `false`.
+  - `error` - overrides the default joi error as described in [`any.error(err)`](#anyerrorerr). Defaults to no override.
 - `callback` - the optional synchronous callback method using the signature `function(err, value)` where:
   - `err` - if validation failed, the [error](#errors) reason, otherwise `null`.
   - `value` - the validated value with any type conversions and other modifiers applied (the input is left unchanged). `value` can be
     incomplete if validation failed and `abortEarly` is `true`. If callback is not provided, then returns an object with [error](#errors)
     and value properties.
 
-```javascript
+```js
 const schema = {
     a: Joi.number()
 };
@@ -172,7 +187,7 @@ const result = Joi.validate(value, schema);
 Converts literal schema definition to **joi** schema object (or returns the same back if already a **joi** schema object) where:
 - `schema` - the schema definition to compile.
 
-```javascript
+```js
 const definition = ['key', 5, { a: true, b: [/^a/, 'boom'] }];
 const schema = Joi.compile(definition);
 
@@ -198,7 +213,7 @@ Validates a value against a schema and [throws](#errors) if validation fails whe
 - `schema` - the schema object.
 - `message` - optional message string prefix added in front of the error message. may also be an Error object.
 
-```javascript
+```js
 Joi.assert('x', Joi.number());
 ```
 
@@ -209,9 +224,37 @@ Validates a value against a schema, returns valid object, and [throws](#errors) 
 - `schema` - the schema object.
 - `message` - optional message string prefix added in front of the error message. may also be an Error object.
 
-```javascript
+```js
 Joi.attempt('x', Joi.number()); // throws error
 const result = Joi.attempt('4', Joi.number()); // result -> 4
+```
+
+### `ref(key, [options])`
+
+Generates a reference to the value of the named key. References are resolved at validation time and in order of dependency
+so that if one key validation depends on another, the dependent key is validated second after the reference is validated.
+References support the following arguments:
+- `key` - the reference target. References cannot point up the object tree, only to sibling keys, but they can point to
+  their siblings' children (e.g. 'a.b.c') using the `.` separator. If a `key` starts with `$` is signifies a context reference
+  which is looked up in the `context` option object.
+- `options` - optional settings:
+    - `separator` - overrides the default `.` hierarchy separator.
+    - `contextPrefix` - overrides the default `$` context prefix signifier.
+    - Other options can also be passed based on what [`Hoek.reach`](https://github.com/hapijs/hoek/blob/master/API.md#reachobj-chain-options) supports.
+
+Note that references can only be used where explicitly supported such as in `valid()` or `invalid()` rules. If upwards
+(parents) references are needed, use [`object.assert()`](#objectassertref-schema-message).
+
+```js
+const schema = Joi.object().keys({
+    a: Joi.ref('b.c'),
+    b: {
+        c: Joi.any()
+    },
+    c: Joi.ref('$x')
+});
+
+Joi.validate({ a: 5, b: { c: 5 } }, schema, { context: { x: 5 } }, (err, value) => {});
 ```
 
 ### `isRef(ref)`
@@ -226,18 +269,111 @@ Joi.isRef(ref); // returns true
 
 ### `reach(schema, path)`
 
-Get a sub-schema of an existing schema based on a path. Path separatar is a dot (`.`).
+Get a sub-schema of an existing schema based on a path. Path separator is a dot (`.`).
 
 ```js
 const schema = Joi.object({ foo: Joi.object({ bar: Joi.number() }});
 const number = Joi.reach(schema, 'foo.bar');
 ```
 
+### `extend(extension)`
+
+Creates a new Joi instance customized with the extension(s) you provide included.
+
+It is **important** to understand that original Joi library is not modified by this.
+
+#### Terms
+
+The extension makes use of some common structures that need to be described prior :
+* `value` - the value being processed by Joi.
+* `state` - an object containing the current context of validation.
+  * `key` - the key of the current value.
+  * `path` - the full path of the current value.
+  * `parent` - the potential parent of the current value.
+* `options` - options object provided through [`any().options()`](#anyoptionsoptions) or [`Joi.validate()`](#validatevalue-schema-options-callback).
+
+#### Extension
+
+`extension` can be a single extension object or an array of extension objects using the following parameters :
+* `name` - name of the new type you are defining, this can be an existing type. **Required**.
+* `base` - an existing Joi schema to base your type upon. Defaults to `Joi.any()`.
+* `coerce` - an optional function that runs before the base, usually serves when you want to coerce values of a different type than your base. It takes 3 arguments `value`, `state` and `options`.
+* `pre` - an optional function that runs first in the validation chain, usually serves when you need to cast values. It takes 3 arguments `value`, `state` and `options`.
+* `language` - an optional object to add error definitions. Every key will be prefixed by the type name.
+* `describe` - an optional function taking the fully formed description to post-process it.
+* `rules` - an optional array of rules to add.
+  * `name` - name of the new rule. **Required**.
+  * `params` - an optional object containing Joi schemas of each parameter ordered. You can also pass a single Joi schema as long as it is a `Joi.object()`, of course some methods such as `pattern` or `rename` won't be useful or won't work at all in this given context.
+  * `setup` - an optional function that takes an object with the provided parameters. One of `setup` or `validate` **must** be provided.
+  * `validate` - an optional function to validate values that takes 4 parameters `params`, `value`, `state` and `options`. One of `setup` or `validate` **must** be provided.
+  * `description` - an optional string or function taking the parameters as argument to describe what the rule is doing.
+
+#### npm note
+
+If you publish your extension on npm, make sure to add `joi` and `extension` as keywords so that it's discoverable more easily.
+
+#### Examples
+
+```js
+const Joi = require('joi');
+const customJoi = Joi.extend({
+    base: Joi.number(),
+    name: 'number',
+    language: {
+        round: 'needs to be a rounded number', // Used below as 'number.round'
+        dividable: 'needs to be dividable by {{q}}'
+    },
+    pre(value, state, options) {
+
+        if (options.convert && this._flags.round) {
+            return Math.round(value); // Change the value
+        }
+
+        return value; // Keep the value as it was
+    },
+    rules: [
+        {
+            name: 'round',
+            setup(params) {
+
+                this._flags.round = true; // Set a flag for later use
+            },
+            validate(params, value, state, options) {
+
+                if (value % 1 !== 0) {
+                    // Generate an error, state and options need to be passed
+                    return this.createError('number.round', { v: value }, state, options);
+                }
+
+                return value; // Everything is OK
+            }
+        },
+        {
+            name: 'dividable',
+            params: {
+                q: Joi.alternatives([Joi.number().required(), Joi.func().ref()])
+            },
+            validate(params, value, state, options) {
+
+                if (value % params.q !== 0) {
+                    // Generate an error, state and options need to be passed, q is used in the language
+                    return this.createError('number.dividable', { v: value, q: params.q }, state, options);
+                }
+
+                return value; // Everything is OK
+            }
+        }
+    ]
+});
+
+const schema = customJoi.number().round().dividable(3);
+```
+
 ### `any`
 
 Generates a schema object that matches any data type.
 
-```javascript
+```js
 const any = Joi.any();
 any.validate('a', (err, value) => { });
 ```
@@ -251,7 +387,7 @@ Whitelists a value where:
 Note that this whitelist of allowed values is in *addition* to any other permitted values.
 To create an exclusive whitelist of values, see [`any.valid(value)`](#anyvalidvalue).
 
-```javascript
+```js
 const schema = {
     a: Joi.any().allow('a'),
     b: Joi.any().allow('b', 'B'),
@@ -265,7 +401,7 @@ Adds the provided values into the allowed whitelist and marks them as the only v
 - `value` - the allowed value which can be of any type and will be matched against the validated value before applying any other rules.
   `value` can be an array of values, or multiple values can be passed as individual arguments. `value` supports [references](#refkey-options).
 
-```javascript
+```js
 const schema = {
     a: Joi.any().valid('a'),
     b: Joi.any().valid('b', 'B'),
@@ -279,7 +415,7 @@ Blacklists a value where:
 - `value` - the forbidden value which can be of any type and will be matched against the validated value before applying any other rules.
   `value` can be an array of values, or multiple values can be passed as individual arguments. `value` supports [references](#refkey-options).
 
-```javascript
+```js
 const schema = {
     a: Joi.any().invalid('a'),
     b: Joi.any().invalid('b', 'B'),
@@ -291,7 +427,7 @@ const schema = {
 
 Marks a key as required which will not allow `undefined` as value. All keys are optional by default.
 
-```javascript
+```js
 const schema = Joi.any().required();
 ```
 
@@ -299,7 +435,7 @@ const schema = Joi.any().required();
 
 Marks a key as optional which will allow `undefined` as values. Used to annotate the schema for readability as all keys are optional by default.
 
-```javascript
+```js
 const schema = Joi.any().optional();
 ```
 
@@ -307,7 +443,7 @@ const schema = Joi.any().optional();
 
 Marks a key as forbidden which will not allow any value except `undefined`. Used to explicitly forbid keys.
 
-```javascript
+```js
 const schema = {
     a: Joi.any().forbidden()
 };
@@ -317,11 +453,11 @@ const schema = {
 
 Marks a key to be removed from a resulting object or array after validation. Used to sanitize output.
 
-```javascript
-const schema = {
+```js
+const schema = Joi.object({
     username: Joi.string(),
     password: Joi.string().strip()
-};
+});
 
 schema.validate({ username: 'test', password: 'hunter2' }, (err, value) => {
     // value = { username: 'test' }
@@ -339,7 +475,7 @@ schema.validate(['one', 'two', true, false, 1, 2], (err, value) => {
 Annotates the key where:
 - `desc` - the description string.
 
-```javascript
+```js
 const schema = Joi.any().description('this key will match anything you give it');
 ```
 
@@ -348,7 +484,7 @@ const schema = Joi.any().description('this key will match anything you give it')
 Annotates the key where:
 - `notes` - the notes string or array of strings.
 
-```javascript
+```js
 const schema = Joi.any().notes(['this is special', 'this is important']);
 ```
 
@@ -357,7 +493,7 @@ const schema = Joi.any().notes(['this is special', 'this is important']);
 Annotates the key where:
 - `tags` - the tag string or array of strings.
 
-```javascript
+```js
 const schema = Joi.any().tags(['api', 'user']);
 ```
 
@@ -366,7 +502,7 @@ const schema = Joi.any().tags(['api', 'user']);
 Attaches metadata to the key where:
 - `meta` - the meta object to attach.
 
-```javascript
+```js
 const schema = Joi.any().meta({ index: true });
 ```
 
@@ -377,7 +513,7 @@ Annotates the key where:
 
 If the example fails to pass validation, the function will throw.
 
-```javascript
+```js
 const schema = Joi.string().min(4).example('abcd');
 ```
 
@@ -386,7 +522,7 @@ const schema = Joi.string().min(4).example('abcd');
 Annotates the key where:
 - `name` - the unit name of the value.
 
-```javascript
+```js
 const schema = Joi.number().unit('milliseconds');
 ```
 
@@ -395,7 +531,7 @@ const schema = Joi.number().unit('milliseconds');
 Overrides the global `validate()` options for the current key and any sub-key where:
 - `options` - an object with the same optional keys as [`Joi.validate(value, schema, options, callback)`](#validatevalue-schema-options-callback).
 
-```javascript
+```js
 const schema = Joi.any().options({ convert: false });
 ```
 
@@ -404,7 +540,7 @@ const schema = Joi.any().options({ convert: false });
 Strict mode sets the `options.convert` options to `false` which prevent type casting for the current key and any child keys.
 - `isStrict` - whether strict mode is enabled or not. Defaults to true.
 
-```javascript
+```js
 const schema = Joi.any().strict();
 ```
 
@@ -421,7 +557,7 @@ and any future assignment.
 
 Additionally, when specifying a method you must either have a `description` property on your method or the second parameter is required.
 
-```javascript
+```js
 const generateUsername = (context) => {
 
   return context.firstname.toLowerCase() + '-' + context.lastname.toLowerCase();
@@ -452,7 +588,7 @@ Joi.validate({
 Returns a new type that is the result of adding the rules of one type to another where:
 - `schema` - a **joi** type to merge into the current schema. Can only be of the same type as the context type or `any`. If applied to an `any` type, the schema can be any other schema.
 
-```javascript
+```js
 const a = Joi.string().valid('a');
 const b = Joi.string().valid('b');
 const ab = a.concat(b);
@@ -467,7 +603,7 @@ Converts the type into an [`alternatives`](#alternatives) type where the conditi
     - `then` - the alternative schema type if the condition is true. Required if `otherwise` is missing.
     - `otherwise` - the alternative schema type if the condition is false. Required if `then` is missing.
 
-```javascript
+```js
 const schema = {
     a: Joi.any().valid('x').when('b', { is: 5, then: Joi.valid('y'), otherwise: Joi.valid('z') }),
     b: Joi.any()
@@ -476,7 +612,7 @@ const schema = {
 
 Alternatively, if you want to specify a specific type such as `string`, `array`, etc, you can do so like this:
 
-```javascript
+```js
 const schema = {
     a: Joi.valid('a', 'b', 'other'),
     other: Joi.string()
@@ -484,12 +620,30 @@ const schema = {
 };
 ```
 
+If you need to validate a child key inside a nested object based on a sibling's value, you can do so like this:
+
+```js
+const schema = Joi.object().keys({
+    a: Joi.boolean().required(),
+    b: Joi.object()
+        .keys({
+            c: Joi.string(),
+            d: Joi.number().required()
+        })
+        .required()
+        .when('a', {
+            is: true,
+            then: Joi.object({ c: Joi.required() })		// b.c is required only when a is true
+        })
+});
+```
+
 #### `any.label(name)`
 
 Overrides the key name in error messages.
 - `name` - the name of the key.
 
-```javascript
+```js
 const schema = {
     first_name: Joi.string().label('First Name')
 };
@@ -500,7 +654,7 @@ const schema = {
 Outputs the original untouched value instead of the casted value.
 - `isRaw` - whether to enable raw mode or not. Defaults to true.
 
-```javascript
+```js
 const schema = {
     timestamp: Joi.date().format('YYYYMMDD').raw()
 };
@@ -518,33 +672,48 @@ schema = schema.empty();
 schema.validate(''); // returns { error: "value" is not allowed to be empty, value: '' }
 ```
 
+#### `any.error(err)`
+
+Overrides the default joi error with a custom error if the rule fails where:
+- `err` - the override error.
+
+Note that the provided error will be returned as-is, unmodified and undecorated with any of the
+normal joi error properties. If validation fails and another error is found before the error
+override, that error will be returned and the override will be ignored (unless the `abortEarly`
+option has been set to `false`).
+
+```js
+let schema = Joi.string().error(new Error('Was REALLY expecting a string'));
+schema.validate(3);     // returns err.message === 'Was REALLY expecting a string'
+```
+
 ### `array`
 
 Generates a schema object that matches an array data type. Note that undefined values inside arrays are not allowed by default but can be by using `sparse()`.
 
 Supports the same methods of the [`any()`](#any) type.
 
-```javascript
+```js
 const array = Joi.array().items(Joi.string().valid('a', 'b'));
 array.validate(['a', 'b', 'a'], (err, value) => { });
 ```
 
-#### `array.sparse(enabled)`
+#### `array.sparse([enabled])`
 
-Allow this array to be sparse. `enabled` can be used with a falsy value to go back to the default behavior.
+Allows this array to be sparse. `enabled` can be used with a falsy value to go back to the default behavior.
 
-```javascript
+```js
 let schema = Joi.array().sparse(); // undefined values are now allowed
 schema = schema.sparse(false); // undefined values are now denied
 ```
 
-#### `array.single(enabled)`
+#### `array.single([enabled])`
 
-Allow single values to be checked against rules as if it were provided as an array.
+Allows single values to be checked against rules as if it were provided as an array.
 
 `enabled` can be used with a falsy value to go back to the default behavior.
 
-```javascript
+```js
 const schema = Joi.array().items(Joi.number()).single();
 schema.validate([4]); // returns `{ error: null, value: [ 4 ] }`
 schema.validate(4); // returns `{ error: null, value: [ 4 ] }`
@@ -552,7 +721,7 @@ schema.validate(4); // returns `{ error: null, value: [ 4 ] }`
 
 #### `array.items(type)`
 
-List the types allowed for the array values where:
+Lists the types allowed for the array values where:
 - `type` - a **joi** schema object to validate each array item against. `type` can be an array of values, or multiple values can be passed as individual arguments.
 
 If a given type is `.required()` then there must be a matching item in the array.
@@ -560,7 +729,7 @@ If a type is `.forbidden()` then it cannot appear in the array.
 Required items can be added multiple times to signify that multiple items must be found.
 Errors will contain the number of items that didn't match. Any unmatched item having a [label](#anylabelname) will be mentioned explicitly.
 
-```javascript
+```js
 const schema = Joi.array().items(Joi.string(), Joi.number()); // array may contain strings and numbers
 const schema = Joi.array().items(Joi.string().required(), Joi.string().required()); // array must contain at least two strings
 const schema = Joi.array().items(Joi.string().valid('not allowed').forbidden(), Joi.string()); // array may contain strings, but none of those strings can match 'not allowed'
@@ -569,13 +738,13 @@ const schema = Joi.array().items(Joi.string().label('My string').required(), Joi
 
 #### `array.ordered(type)`
 
-List the types in sequence order for the array values where:
+Lists the types in sequence order for the array values where:
 - `type` - a **joi** schema object to validate against each array item in sequence order. `type` can be an array of values, or multiple values can be passed as individual arguments.
 
 If a given type is `.required()` then there must be a matching item with the same index position in the array.
 Errors will contain the number of items that didn't match. Any unmatched item having a [label](#anylabelname) will be mentioned explicitly.
 
-```javascript
+```js
 const schema = Joi.array().ordered(Joi.string().required(), Joi.number().required()); // array must have first item as string and second item as number
 const schema = Joi.array().ordered(Joi.string().required()).items(Joi.number().required()); // array must have first item as string and 1 or more subsequent items as number
 const schema = Joi.array().ordered(Joi.string().required(), Joi.number()); // array must have first item as string and optionally second item as number
@@ -586,7 +755,7 @@ const schema = Joi.array().ordered(Joi.string().required(), Joi.number()); // ar
 Specifies the minimum number of items in the array where:
 - `limit` - the lowest number of array items allowed.
 
-```javascript
+```js
 const schema = Joi.array().min(2);
 ```
 
@@ -595,7 +764,7 @@ const schema = Joi.array().min(2);
 Specifies the maximum number of items in the array where:
 - `limit` - the highest number of array items allowed.
 
-```javascript
+```js
 const schema = Joi.array().max(10);
 ```
 
@@ -604,27 +773,35 @@ const schema = Joi.array().max(10);
 Specifies the exact number of items in the array where:
 - `limit` - the number of array items allowed.
 
-```javascript
+```js
 const schema = Joi.array().length(5);
 ```
 
-#### `array.unique()`
+#### `array.unique([comparator])`
 
 Requires the array values to be unique.
 
+You can provide a custom `comparator` function that takes 2 parameters to compare. This function should return whether the 2 parameters are equal or not, you are also **responsible** for this function not to fail, any `Error` would bubble out of Joi. 
+
+Note: remember that if you provide a custom comparator, different types can be passed as parameter depending on the rules you set on items.
+
 Be aware that a deep equality is performed on elements of the array having a type of `object`, a performance penalty is to be expected for this kind of operation.
 
-```javascript
+```js
 const schema = Joi.array().unique();
+```
+
+```js
+const schema = Joi.array().unique((a, b) => a.property === b.property);
 ```
 
 ### `boolean`
 
-Generates a schema object that matches a boolean data type (as well as the strings 'true', 'false', 'yes', 'no', 'on' or 'off'). Can also be called via `bool()`.
+Generates a schema object that matches a boolean data type (as well as the strings 'true', 'false', 'yes', 'no', 'on', 'off', 1, 0, '1', or '0'). Can also be called via `bool()`.
 
 Supports the same methods of the [`any()`](#any) type.
 
-```javascript
+```js
 const boolean = Joi.boolean();
 boolean.validate(true, (err, value) => { });
 ```
@@ -635,7 +812,7 @@ Generates a schema object that matches a Buffer data type (as well as the string
 
 Supports the same methods of the [`any()`](#any) type.
 
-```javascript
+```js
 const schema = Joi.binary();
 ```
 
@@ -644,7 +821,7 @@ const schema = Joi.binary();
 Sets the string encoding format if a string input is converted to a buffer where:
 - `encoding` - the encoding scheme.
 
-```javascript
+```js
 const schema = Joi.binary().encoding('base64');
 ```
 
@@ -653,7 +830,7 @@ const schema = Joi.binary().encoding('base64');
 Specifies the minimum length of the buffer where:
 - `limit` - the lowest size of the buffer.
 
-```javascript
+```js
 const schema = Joi.binary().min(2);
 ```
 
@@ -662,7 +839,7 @@ const schema = Joi.binary().min(2);
 Specifies the maximum length of the buffer where:
 - `limit` - the highest size of the buffer.
 
-```javascript
+```js
 const schema = Joi.binary().max(10);
 ```
 
@@ -671,7 +848,7 @@ const schema = Joi.binary().max(10);
 Specifies the exact length of the buffer:
 - `limit` - the size of buffer allowed.
 
-```javascript
+```js
 const schema = Joi.binary().length(5);
 ```
 
@@ -681,7 +858,7 @@ Generates a schema object that matches a date type (as well as a JavaScript date
 
 Supports the same methods of the [`any()`](#any) type.
 
-```javascript
+```js
 const date = Joi.date();
 date.validate('12-21-2012', (err, value) => { });
 ```
@@ -691,19 +868,19 @@ date.validate('12-21-2012', (err, value) => { });
 Specifies the oldest date allowed where:
 - `date` - the oldest date allowed.
 
-```javascript
+```js
 const schema = Joi.date().min('1-1-1974');
 ```
 
 Notes: `'now'` can be passed in lieu of `date` so as to always compare relatively to the current date, allowing to explicitly ensure a date is either in the past or in the future.
 
-```javascript
+```js
 const schema = Joi.date().min('now');
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   from: Joi.date().required(),
   to: Joi.date().min(Joi.ref('from')).required()
@@ -715,19 +892,19 @@ const schema = Joi.object({
 Specifies the latest date allowed where:
 - `date` - the latest date allowed.
 
-```javascript
+```js
 const schema = Joi.date().max('12-31-2020');
 ```
 
 Notes: `'now'` can be passed in lieu of `date` so as to always compare relatively to the current date, allowing to explicitly ensure a date is either in the past or in the future.
 
-```javascript
+```js
 const schema = Joi.date().max('now');
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   from: Joi.date().max(Joi.ref('to')).required(),
   to: Joi.date().required()
@@ -739,7 +916,7 @@ const schema = Joi.object({
 Specifies the allowed date format:
 - `format` - string or array of strings that follow the `moment.js` [format](http://momentjs.com/docs/#/parsing/string-format/).
 
-```javascript
+```js
 const schema = Joi.date().format('YYYY/MM/DD');
 ```
 
@@ -747,7 +924,7 @@ const schema = Joi.date().format('YYYY/MM/DD');
 
 Requires the string value to be in valid ISO 8601 date format.
 
-```javascript
+```js
 const schema = Joi.date().iso();
 ```
 
@@ -757,7 +934,7 @@ Requires the value to be a timestamp interval from [Unix Time](https://en.wikipe
 
 - `type` - the type of timestamp (allowed values are `unix` or `javascript` [default])
 
-```javascript
+```js
 const schema = Joi.date().timestamp(); // defaults to javascript timestamp
 const schema = Joi.date().timestamp('javascript'); // also, for javascript timestamp (milliseconds)
 const schema = Joi.date().timestamp('unix'); // for unix timestamp (seconds)
@@ -771,7 +948,7 @@ Supports the same methods of the [`object()`](#object) type. Note that validatin
 to be cloned. While the function will retain its prototype and closure, it will lose its `length` property value (will be
 set to `0`).
 
-```javascript
+```js
 const func = Joi.func();
 func.validate(function () {}, (err, value) => { });
 ```
@@ -781,7 +958,7 @@ func.validate(function () {}, (err, value) => { });
 Specifies the arity of the function where:
 - `n` - the arity expected.
 
-```javascript
+```js
 const schema = Joi.func().arity(2);
 ```
 
@@ -790,7 +967,7 @@ const schema = Joi.func().arity(2);
 Specifies the minimal arity of the function where:
 - `n` - the minimal arity expected.
 
-```javascript
+```js
 const schema = Joi.func().minArity(1);
 ```
 
@@ -799,10 +976,17 @@ const schema = Joi.func().minArity(1);
 Specifies the maximal arity of the function where:
 - `n` - the maximum arity expected.
 
-```javascript
+```js
 const schema = Joi.func().arity(3);
 ```
 
+#### `func.ref()`
+
+Requires the function to be a Joi reference.
+
+```js
+const schema = Joi.func().ref();
+```
 
 ### `number`
 
@@ -812,7 +996,7 @@ Generates a schema object that matches a number data type (as well as strings th
 
 Supports the same methods of the [`any()`](#any) type.
 
-```javascript
+```js
 const number = Joi.number();
 number.validate(5, (err, value) => { });
 ```
@@ -822,13 +1006,13 @@ number.validate(5, (err, value) => { });
 Specifies the minimum value where:
 - `limit` - the minimum value allowed.
 
-```javascript
+```js
 const schema = Joi.number().min(2);
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   min: Joi.number().required(),
   max: Joi.number().min(Joi.ref('min')).required()
@@ -840,13 +1024,13 @@ const schema = Joi.object({
 Specifies the maximum value where:
 - `limit` - the maximum value allowed.
 
-```javascript
+```js
 const schema = Joi.number().max(10);
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   min: Joi.number().max(Joi.ref('max')).required(),
   max: Joi.number().required()
@@ -857,11 +1041,11 @@ const schema = Joi.object({
 
 Specifies that the value must be greater than `limit`.
 
-```javascript
+```js
 const schema = Joi.number().greater(5);
 ```
 
-```javascript
+```js
 const schema = Joi.object({
   min: Joi.number().required(),
   max: Joi.number().greater(Joi.ref('min')).required()
@@ -872,13 +1056,13 @@ const schema = Joi.object({
 
 Specifies that the value must be less than `limit`.
 
-```javascript
+```js
 const schema = Joi.number().less(10);
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   min: Joi.number().less(Joi.ref('max')).required(),
   max: Joi.number().required()
@@ -889,7 +1073,7 @@ const schema = Joi.object({
 
 Requires the number to be an integer (no floating point).
 
-```javascript
+```js
 const schema = Joi.number().integer();
 ```
 
@@ -898,7 +1082,7 @@ const schema = Joi.number().integer();
 Specifies the maximum number of decimal places where:
 - `limit` - the maximum number of decimal places allowed.
 
-```javascript
+```js
 const schema = Joi.number().precision(2);
 ```
 
@@ -906,15 +1090,18 @@ const schema = Joi.number().precision(2);
 
 Specifies that the value must be a multiple of `base`:
 
-```javascript
+```js
 const schema = Joi.number().multiple(3);
 ```
+
+Notes: `Joi.number.multiple(base)` _uses the modulo operator (%) to determine if a number is multiple of another number.
+Therefore, it has the normal limitations of Javascript modulo operator. The results with decimal/floats maybe incorrect._
 
 #### `number.positive()`
 
 Requires the number to be positive.
 
-```javascript
+```js
 const schema = Joi.number().positive();
 ```
 
@@ -922,7 +1109,7 @@ const schema = Joi.number().positive();
 
 Requires the number to be negative.
 
-```javascript
+```js
 const schema = Joi.number().negative();
 ```
 
@@ -933,7 +1120,7 @@ to allowing any child key.
 
 Supports the same methods of the [`any()`](#any) type.
 
-```javascript
+```js
 const object = Joi.object().keys({
     a: Joi.number().min(1).max(10).integer(),
     b: 'some string'
@@ -950,7 +1137,7 @@ Sets or extends the allowed object keys where:
   previously defined keys (but narrows the selection if all keys previously allowed). Defaults to 'undefined' which
   allows any child key.
 
-```javascript
+```js
 const base = Joi.object().keys({
     a: Joi.number(),
     b: Joi.string()
@@ -964,21 +1151,21 @@ const extended = base.keys({
 Notes: We have three different ways to define a schema for performing a validation
 
 - Using the plain JS object notation:
-```javascript
+```js
 const schema = {
     a: Joi.string(),
     b: Joi.number()
 };
 ```
 - Using the `Joi.object([schema])` notation
-```javascript
+```js
 const schema = Joi.object({
     a: Joi.string(),
     b: Joi.number()
 });
 ```
 - Using the `Joi.object().keys([schema])` notation
-```javascript
+```js
 const schema = Joi.object().keys({
     a: Joi.string(),
     b: Joi.number()
@@ -998,7 +1185,7 @@ Besides, passing the `{}` object to the `validate()` method each time, will perf
 
 Using `Joi.object([schema])` will return a schema object, so you can call the `validate()` method directly, e.g:
 
-```javascript
+```js
 const schema = Joi.object({
     a: Joi.boolean()
 });
@@ -1012,7 +1199,7 @@ When you use `Joi.object([schema])`, it gets compiled the first time, so you can
 
 Another benefits of using `Joi.object([schema])` instead of a plain JS object is that you can set any options on the object like allowing unknown keys, e.g:
 
-```javascript
+```js
 const schema = Joi.object({
     arg: Joi.string().valid('firstname', 'lastname', 'title', 'company', 'jobtitle'),
     value: Joi.string(),
@@ -1031,7 +1218,7 @@ Some people like to use `keys()` to make the code more explicit (this is style o
 Specifies the minimum number of keys in the object where:
 - `limit` - the lowest number of keys allowed.
 
-```javascript
+```js
 const schema = Joi.object().min(2);
 ```
 
@@ -1040,7 +1227,7 @@ const schema = Joi.object().min(2);
 Specifies the maximum number of keys in the object where:
 - `limit` - the highest number of object keys allowed.
 
-```javascript
+```js
 const schema = Joi.object().max(10);
 ```
 
@@ -1049,7 +1236,7 @@ const schema = Joi.object().max(10);
 Specifies the exact number of keys in the object where:
 - `limit` - the number of object keys allowed.
 
-```javascript
+```js
 const schema = Joi.object().length(5);
 ```
 
@@ -1072,7 +1259,7 @@ well where:
 - `peers` - the key names of which if one present, all are required. `peers` can be a single string value, an
   array of string values, or each peer provided as an argument.
 
-```javascript
+```js
 const schema = Joi.object().keys({
     a: Joi.any(),
     b: Joi.any()
@@ -1086,7 +1273,7 @@ same time where:
 - `peers` - the key names of which if one present, the others may not all be present. `peers` can be a single string value, an
   array of string values, or each peer provided as an argument.
 
-```javascript
+```js
 const schema = Joi.object().keys({
     a: Joi.any(),
     b: Joi.any()
@@ -1099,7 +1286,7 @@ Defines a relationship between keys where one of the peers is required (and more
 - `peers` - the key names of which at least one must appear. `peers` can be a single string value, an
   array of string values, or each peer provided as an argument.
 
-```javascript
+```js
 const schema = Joi.object().keys({
     a: Joi.any(),
     b: Joi.any()
@@ -1112,7 +1299,7 @@ Defines an exclusive relationship between a set of keys where one of them is req
 - `peers` - the exclusive key names that must not appear together but where one of them is required. `peers` can be a single string value, an
   array of string values, or each peer provided as an argument.
 
-```javascript
+```js
 const schema = Joi.object().keys({
     a: Joi.any(),
     b: Joi.any()
@@ -1128,7 +1315,7 @@ Requires the presence of other keys whenever the specified key is present where:
 Note that unlike [`object.and()`](#objectandpeers), `with()` creates a dependency only between the `key` and each of the `peers`, not
 between the `peers` themselves.
 
-```javascript
+```js
 const schema = Joi.object().keys({
     a: Joi.any(),
     b: Joi.any()
@@ -1141,7 +1328,7 @@ Forbids the presence of other keys whenever the specified is present where:
 - `key` - the reference key.
 - `peers` - the forbidden peer key names that must not appear together with `key`. `peers` can be a single string value or an array of string values.
 
-```javascript
+```js
 const schema = Joi.object().keys({
     a: Joi.any(),
     b: Joi.any()
@@ -1161,7 +1348,7 @@ Renames a key to another name (deletes the renamed key) where:
 
 Keys are renamed before any other validation rules are applied.
 
-```javascript
+```js
 const object = Joi.object().keys({
     a: Joi.number()
 }).rename('b', 'a');
@@ -1177,7 +1364,7 @@ Verifies an assertion where:
   the object value, not the value of the `ref` target.
 - `message` - optional human-readable message used when the assertion fails. Defaults to 'failed to pass the assertion test'.
 
-```javascript
+```js
 const schema = Joi.object().keys({
     a: {
         b: Joi.string(),
@@ -1194,7 +1381,7 @@ const schema = Joi.object().keys({
 Overrides the handling of unknown keys for the scope of the current object only (does not apply to children) where:
 - `allow` - if `false`, unknown keys are not allowed, otherwise unknown keys are ignored.
 
-```javascript
+```js
 const schema = Joi.object({ a: Joi.any() }).unknown();
 ```
 
@@ -1204,8 +1391,16 @@ Requires the object to be an instance of a given constructor where:
 - `constructor` - the constructor function that the object must be an instance of.
 - `name` - an alternate name to use in validation errors. This is useful when the constructor function does not have a name.
 
-```javascript
+```js
 const schema = Joi.object().type(RegExp);
+```
+
+#### `object.schema()`
+
+Requires the object to be a Joi schema instance.
+
+```js
+const schema = Joi.object().schema();
 ```
 
 #### `object.requiredKeys(children)`
@@ -1213,7 +1408,7 @@ const schema = Joi.object().type(RegExp);
 Sets the specified children to required.
 - `children` - can be a single string value, an array of string values, or each child provided as an argument.
 
-```javascript
+```js
 const schema = Joi.object().keys({ a: { b: Joi.number() }, c: { d: Joi.string() } });
 const requiredSchema = schema.requiredKeys('', 'a.b', 'c', 'c.d');
 ```
@@ -1225,7 +1420,7 @@ Note that in this example `''` means the current object, `a` is not required but
 Sets the specified children to optional.
 - `children` - can be a single string value, an array of string values, or each child provided as an argument.
 
-```javascript
+```js
 const schema = Joi.object().keys({ a: { b: Joi.number().required() }, c: { d: Joi.string().required() } });
 const requiredSchema = schema.optionalKeys('a.b', 'c.d');
 ```
@@ -1238,7 +1433,7 @@ Generates a schema object that matches a string data type. Note that empty strin
 
 Supports the same methods of the [`any()`](#any) type.
 
-```javascript
+```js
 const schema = Joi.string().min(1).max(10);
 schema.validate('12345', (err, value) => { });
 ```
@@ -1247,7 +1442,7 @@ schema.validate('12345', (err, value) => { });
 
 Allows the value to match any whitelist of blacklist item in a case insensitive comparison.
 
-```javascript
+```js
 const schema = Joi.string().valid('a').insensitive();
 ```
 
@@ -1257,13 +1452,13 @@ Specifies the minimum number string characters where:
 - `limit` - the minimum number of string characters required.
 - `encoding` - is specified, the string length is calculated in bytes using the provided encoding.
 
-```javascript
+```js
 const schema = Joi.string().min(2);
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   min: Joi.string().required(),
   value: Joi.string().min(Joi.ref('min'), 'utf8').required()
@@ -1276,17 +1471,28 @@ Specifies the maximum number of string characters where:
 - `limit` - the maximum number of string characters allowed.
 - `encoding` - if specified, the string length is calculated in bytes using the provided encoding.
 
-```javascript
+```js
 const schema = Joi.string().max(10);
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   max: Joi.string().required(),
   value: Joi.string().max(Joi.ref('max'), 'utf8').required()
 });
+```
+
+#### `string.truncate([enabled])`
+
+Specifies whether the `string.max()` limit should be used as a truncation.
+
+Parameters are:
+- `enabled` - optional parameter defaulting to `true` which allows you to reset the behavior of truncate by providing a falsy value.
+
+```js
+const schema = Joi.string().max(5).truncate();
 ```
 
 #### `string.creditCard()`
@@ -1294,7 +1500,7 @@ const schema = Joi.object({
 Requires the number to be a credit card number (Using [Lunh
 Algorithm](http://en.wikipedia.org/wiki/Luhn_algorithm)).
 
-```javascript
+```js
 const schema = Joi.string().creditCard();
 ```
 
@@ -1304,13 +1510,13 @@ Specifies the exact string length required where:
 - `limit` - the required string length.
 - `encoding` - is specified, the string length is calculated in bytes using the provided encoding.
 
-```javascript
+```js
 const schema = Joi.string().length(5);
 ```
 
 It can also be a reference to another field.
 
-```javascript
+```js
 const schema = Joi.object({
   length: Joi.string().required(),
   value: Joi.string().length(Joi.ref('length'), 'utf8').required()
@@ -1323,7 +1529,7 @@ Defines a regular expression rule where:
 - `pattern` - a regular expression object the string value must match against.
 - `name` - optional name for patterns (useful with multiple patterns). Defaults to 'required'.
 
-```javascript
+```js
 const schema = Joi.string().regex(/^[abc]+$/);
 ```
 
@@ -1335,7 +1541,7 @@ _replacement_ string where:
 - `replacement` - the string that will replace the pattern.
 
 
-```javascript
+```js
 const schema = Joi.string().replace(/b/gi, 'x');
 schema.validate('abBc', (err, value) => {
   // here value will be 'axxc'
@@ -1348,7 +1554,7 @@ When `pattern` is a _string_ all its occurrences will be replaced.
 
 Requires the string value to only contain a-z, A-Z, and 0-9.
 
-```javascript
+```js
 const schema = Joi.string().alphanum();
 ```
 
@@ -1356,7 +1562,7 @@ const schema = Joi.string().alphanum();
 
 Requires the string value to only contain a-z, A-Z, 0-9, and underscore _.
 
-```javascript
+```js
 const schema = Joi.string().token();
 ```
 
@@ -1369,7 +1575,7 @@ Requires the string value to be a valid email address.
     - `tldWhitelist` - Specifies a list of acceptable TLDs.
     - `minDomainAtoms` - Number of atoms required for the domain. Be careful since some domains, such as `io`, directly allow email.
 
-```javascript
+```js
 const schema = Joi.string().email();
 ```
 
@@ -1381,7 +1587,7 @@ Requires the string value to be a valid ip address.
     - `version` - One or more IP address versions to validate against. Valid values: `ipv4`, `ipv6`, `ipvfuture`
     - `cidr` - Used to determine if a CIDR is allowed or not. Valid values: `optional`, `required`, `forbidden`
 
-```javascript
+```js
 // Accept only ipv4 and ipv6 addresses with a CIDR
 const schema = Joi.string().ip({
   version: [
@@ -1400,7 +1606,7 @@ Requires the string value to be a valid [RFC 3986](http://tools.ietf.org/html/rf
     - `scheme` - Specifies one or more acceptable Schemes, should only include the scheme name. Can be an Array or String (strings are automatically escaped for use in a Regular Expression).
     - `allowRelative` - Allow relative URIs. Defaults to `false`.
 
-```javascript
+```js
 // Accept git or git http/https
 const schema = Joi.string().uri({
   scheme: [
@@ -1414,7 +1620,7 @@ const schema = Joi.string().uri({
 
 Requires the string value to be a valid GUID.
 
-```javascript
+```js
 const schema = Joi.string().guid();
 ```
 
@@ -1422,7 +1628,7 @@ const schema = Joi.string().guid();
 
 Requires the string value to be a valid hexadecimal string.
 
-```javascript
+```js
 const schema = Joi.string().hex();
 ```
 
@@ -1430,7 +1636,7 @@ const schema = Joi.string().hex();
 
 Requires the string value to be a valid hostname as per [RFC1123](http://tools.ietf.org/html/rfc1123).
 
-```javascript
+```js
 const schema = Joi.string().hostname();
 ```
 
@@ -1439,7 +1645,7 @@ const schema = Joi.string().hostname();
 Requires the string value to be all lowercase. If the validation `convert` option is on (enabled by default), the string
 will be forced to lowercase.
 
-```javascript
+```js
 const schema = Joi.string().lowercase();
 ```
 
@@ -1448,7 +1654,7 @@ const schema = Joi.string().lowercase();
 Requires the string value to be all uppercase. If the validation `convert` option is on (enabled by default), the string
 will be forced to uppercase.
 
-```javascript
+```js
 const schema = Joi.string().uppercase();
 ```
 
@@ -1457,7 +1663,7 @@ const schema = Joi.string().uppercase();
 Requires the string value to contain no whitespace before or after. If the validation `convert` option is on (enabled by
 default), the string will be trimmed.
 
-```javascript
+```js
 const schema = Joi.string().trim();
 ```
 
@@ -1478,7 +1684,7 @@ Supports the same methods of the [`any()`](#any) type.
 
 Alternatives can be expressed using the shorter `[]` notation.
 
-```javascript
+```js
 const alt = Joi.alternatives().try(Joi.number(), Joi.string());
 // Same as [Joi.number(), Joi.string()]
 ```
@@ -1488,7 +1694,7 @@ const alt = Joi.alternatives().try(Joi.number(), Joi.string());
 Adds an alternative schema type for attempting to match against the validated value where:
 - `schema` - an array of alternative **joi** types. Also supports providing each type as a separate argument.
 
-```javascript
+```js
 const alt = Joi.alternatives().try(Joi.number(), Joi.string());
 alt.validate('a', (err, value) => { });
 ```
@@ -1502,7 +1708,7 @@ Adds a conditional alternative schema type based on another key (not the same as
     - `then` - the alternative schema type to **try** if the condition is true. Required if `otherwise` is missing.
     - `otherwise` - the alternative schema type to **try** if the condition is false. Required if `then` is missing.
 
-```javascript
+```js
 const schema = {
     a: Joi.alternatives().when('b', { is: 5, then: Joi.string(), otherwise: Joi.number() }),
     b: Joi.any()
@@ -1513,7 +1719,7 @@ Note that `when()` only adds additional alternatives to try and does not impact 
 a `required()` rule on a single alternative will not apply to the overall key. For example,
 this definition of `a`:
 
-```javascript
+```js
 const schema = {
     a: Joi.alternatives().when('b', { is: true, then: Joi.required() }),
     b: Joi.boolean()
@@ -1527,38 +1733,26 @@ when `b` is `true` which will allow any value including `undefined`.
 
 To accomplish the desired result above use:
 
-```javascript
+```js
 const schema = {
     a: Joi.when('b', { is: true, then: Joi.required() }),
     b: Joi.boolean()
 };
 ```
 
-### `ref(key, [options])`
+### `lazy(fn)`
 
-Generates a reference to the value of the named key. References are resolved at validation time and in order of dependency
-so that if one key validation depends on another, the dependent key is validated second after the reference is validated.
-References support the following arguments:
-- `key` - the reference target. References cannot point up the object tree, only to sibling keys, but they can point to
-  their siblings' children (e.g. 'a.b.c') using the `.` separator. If a `key` starts with `$` is signifies a context reference
-  which is looked up in the `context` option object.
-- `options` - optional settings:
-    - `separator` - overrides the default `.` hierarchy separator.
-    - `contextPrefix` - overrides the default `$` context prefix signifier.
+Generates a placeholder schema for a schema that you would provide with the `fn`.
 
-Note that references can only be used where explicitly supported such as in `valid()` or `invalid()` rules. If upwards
-(parents) references are needed, use [`object.assert()`](#objectassertref-schema-message).
+Supports the same methods of the [`any()`](#any) type.
 
-```javascript
-const schema = Joi.object().keys({
-    a: Joi.ref('b.c'),
-    b: {
-        c: Joi.any()
-    },
-    c: Joi.ref('$x')
+This is mostly useful for recursive schemas, like :
+```js
+const Person = Joi.object({
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    children: Joi.array().items(Joi.lazy(() => Person).description('Person schema'))
 });
-
-Joi.validate({ a: 5, b: { c: 5 } }, schema, { context: { x: 5 } }, (err, value) => {});
 ```
 
 ## Errors
